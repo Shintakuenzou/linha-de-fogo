@@ -875,6 +875,7 @@ function updateBot(b, dt) {
 }
 
 /* =================== rede (salas) =================== */
+let netErr = '';
 let roomApi = null, nroom = null, roomCode = '', unsubPeers = null, unsubConn = null, connected = false, lastSend = 0;
 function pushFx(o) { o.i = ++seq; fxOut.push(o); if (fxOut.length > 12) fxOut.shift(); }
 function pushHit(t, d, h) { hits.push({ i: ++seq, t, d, h: h ? 1 : 0 }); if (hits.length > 20) hits.shift(); }
@@ -937,9 +938,21 @@ async function getRoomApi() {
   if (!window.Peer) return null;
   return { join: (code, host) => peerJoin(code, host) };
 }
+/* Servidores para atravessar redes que bloqueiam conexão direta (STUN + TURN Open Relay) */
+async function iceServers() {
+  const list = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:staticauth.openrelay.metered.ca:80' }];
+  try {
+    const username = Math.floor(Date.now() / 1000 + 6 * 3600) + ':linhadefogo';
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('openrelayprojectsecret'), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(username));
+    const credential = btoa(String.fromCharCode(...new Uint8Array(sig)));
+    list.push({ urls: ['turn:staticauth.openrelay.metered.ca:80', 'turn:staticauth.openrelay.metered.ca:80?transport=tcp', 'turn:staticauth.openrelay.metered.ca:443', 'turns:staticauth.openrelay.metered.ca:443?transport=tcp'], username, credential });
+  } catch (e) {}
+  return list;
+}
 function peerJoin(code, host) {
-  return new Promise((resolve, reject) => {
-    const opts = { debug: 0 };
+  return iceServers().then((ice) => new Promise((resolve, reject) => {
+    const opts = { debug: 0, config: { iceServers: ice } };
     const peer = host ? new Peer('linhadefogo-' + code, opts) : new Peer(opts);
     const conns = new Map();
     let myP = {}, open = false, settled = false;
@@ -947,7 +960,7 @@ function peerJoin(code, host) {
     const notify = () => peerHs.forEach((h) => { try { h({}); } catch (e) {} });
     const setConn = (v) => { open = v; connHs.forEach((h) => { try { h(v); } catch (e) {} }); };
     const done = (ok, val) => { if (settled) return; settled = true; clearTimeout(timer); ok ? resolve(val) : reject(val); };
-    const timer = setTimeout(() => { try { peer.destroy(); } catch (e) {} done(false, { code: 'timeout' }); }, 15000);
+    const timer = setTimeout(() => { try { peer.destroy(); } catch (e) {} done(false, { code: 'timeout' }); }, 25000);
     const api = {
       _id: null,
       peers() {
@@ -986,11 +999,11 @@ function peerJoin(code, host) {
     peer.on('error', (err) => {
       if (!settled) { try { peer.destroy(); } catch (e) {} done(false, { code: err.type }); }
     });
-  });
+  }));
 }
 function inviteURL() { return location.origin + location.pathname + '#sala-' + roomCode; }
 async function joinRoom(code, host, tries = 0) {
-  roomCode = code;
+  roomCode = code; netErr = '';
   setNet('Conectando à sala ' + code.toUpperCase() + '…');
   $('pauseInfo').textContent = 'O jogo continua rodando para o seu oponente. Código da sala: ' + code.toUpperCase();
   $('inviteLink').value = inviteURL(); $('invite').hidden = false;
@@ -1007,8 +1020,9 @@ async function joinRoom(code, host, tries = 0) {
     if (host && c === 'unavailable-id' && tries < 3) return joinRoom(randCode(), true, tries + 1);
     const msg = c === 'peer-unavailable' ? 'Sala ' + code.toUpperCase() + ' não encontrada. Confira o código ou peça um link novo.'
       : c === 'timeout' ? 'A conexão demorou demais. Algumas redes (empresa, escola) bloqueiam jogos online; tente outra rede.'
-      : 'Sem conexão com o servidor de salas. Verifique a internet e tente de novo.';
-    bannerFlash(msg); setNet(msg, true);
+      : c === 'browser-incompatible' ? 'Este navegador não suporta o modo online. Use Chrome, Edge ou Firefox atualizados.'
+      : 'Sem conexão com o servidor de salas (' + (c || 'erro') + '). Verifique a internet e tente de novo.';
+    netErr = msg; bannerFlash(msg); setNet(msg, true);
   }
 }
 async function leaveRoom() {
@@ -1107,10 +1121,12 @@ function updateHUD(list) {
   // informações da sala
   let info;
   if (mode === 'bot') info = 'Treino contra bot';
-  else info = 'Sala ' + roomCode.toUpperCase() + ' · ' + (nroom ? (connected ? 'online' : 'reconectando…') : 'sem conexão') + ' · ' + (others.size + 1) + '/2';
+  else info = 'Sala ' + roomCode.toUpperCase() + ' · ' + (nroom ? (connected ? 'online' : 'reconectando…') : (netErr ? 'falhou' : 'conectando…')) + ' · ' + (others.size + 1) + '/2';
   setText(ui.roomInfo, 'ri', info);
   if (now - revealedT < 3.5) { if (cache.rv !== 1) { cache.rv = 1; bannerFlash('Você foi revelado', true); } } else cache.rv = 0;
-  if (mode === 'online' && others.size === 0 && nroom && now > bannerUntil) { ui.banner.hidden = false; ui.banner.className = ''; setText(ui.banner, 'bn', 'Aguardando oponente · aperte Esc para copiar o link de convite (código ' + roomCode.toUpperCase() + ')'); }
+  if (mode === 'online' && !nroom && netErr && now > bannerUntil) { ui.banner.hidden = false; ui.banner.className = 'warn'; ui.banner.style.letterSpacing = '0'; ui.banner.style.fontSize = '15px'; setText(ui.banner, 'bn', netErr + ' Aperte Esc e saia para tentar de novo.'); }
+  else if (mode === 'online' && !nroom && !netErr && now > bannerUntil) { ui.banner.hidden = false; ui.banner.className = ''; setText(ui.banner, 'bn', 'Conectando à sala ' + roomCode.toUpperCase() + '… isso pode levar até 20 segundos.'); }
+  else if (mode === 'online' && others.size === 0 && nroom && now > bannerUntil) { ui.banner.hidden = false; ui.banner.className = ''; setText(ui.banner, 'bn', 'Aguardando oponente · aperte Esc para copiar o link de convite (código ' + roomCode.toUpperCase() + ')'); }
   else if (now > bannerUntil) { ui.banner.hidden = true; cache.bn = ''; }
   if (!me.alive && now < me.deadUntil) setText($('deadBy'), 'db', 'por ' + nameOf(me.killer) + ' · voltando em ' + Math.ceil(me.deadUntil - now) + ' s');
 }
