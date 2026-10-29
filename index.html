@@ -738,6 +738,9 @@ function floorDecal(text, x, z, size) {
 }
 for (const s of SITES) floorDecal(s.name, s.cx, s.cz, 4.2);
 /* =================== materiais de armas e roupas =================== */
+const GEO = {};
+const gg = (k, f) => GEO[k] || (GEO[k] = f());
+const limbGeo = (r1, r2) => new THREE.CylinderGeometry(r1, r2, 1, 10);
 const texGunMetal = canvasTex(256, 256, (g, s) => {
   g.fillStyle = '#2a2d31'; g.fillRect(0, 0, s, s);
   for (let i = 0; i < 900; i++) { g.strokeStyle = `rgba(255,255,255,${rnd(.01, .05)})`; g.beginPath(); const y = Math.random() * s, x = Math.random() * s; g.moveTo(x, y); g.lineTo(x + rnd(10, 60), y + rnd(-1, 1)); g.stroke(); }
@@ -892,165 +895,8 @@ function placeLimb(mesh, A, B) {
   const dir = _v3.subVectors(B, A), len = dir.length();
   mesh.position.copy(A).addScaledVector(dir, .5); mesh.quaternion.setFromUnitVectors(_up, dir.divideScalar(len || 1)); mesh.scale.set(1, len, 1);
 }
-const limbGeo = (r1, r2) => new THREE.CylinderGeometry(r1, r2, 1, 10);
 
-/* =================== soldados articulados =================== */
-const GEO = {};
-const gg = (k, f) => GEO[k] || (GEO[k] = f());
-function soldierMats(side, cls, ally) {
-  const c = classOf(side, CLASSES[side].findIndex((x) => x.id === cls));
-  const shirtCol = c.color, look = c.look;
-  const pants = side === 0 ? M({ map: texFabric, color: pick([0x6e6047, 0x4f5a6b, 0x5e5a4c]), roughness: .95 }) : M({ map: texCamo, color: look === 'swat' ? 0x23272c : 0x47566a, roughness: .95 });
-  const shirt = side === 0 ? M({ map: texFabric, color: shirtCol, roughness: .95 }) : M({ map: texCamo, color: shirtCol, roughness: .95 });
-  return {
-    pants, shirt, look,
-    skin: M({ color: pick([0xc69477, 0xa77656, 0x8d5f43, 0xd9a988]), roughness: .7 }),
-    gear: M({ map: texFabric, color: side === 0 ? 0x4e4532 : 0x1f2429, roughness: .9 }),
-    boot: M({ color: 0x2a221b, roughness: .8 }),
-    glove: M({ color: side === 0 ? 0x3a3326 : 0x15181b, roughness: .85 }),
-    helm: M({ color: look === 'swat' ? 0x181b1f : 0x3b4655, roughness: .55, metalness: .2 }),
-    mask: M({ color: side === 0 ? pick([0x2a2622, 0x8a7a5a, 0x3b3b3b]) : 0x1a1d21, roughness: .95 }),
-    accent: M({ color: look === 'medic' ? 0xf2f2f2 : look === 'eng' ? 0xd6a92a : look === 'hoodie' ? 0x4cc1ff : 0x8b1a1a, roughness: .6, emissive: look === 'hoodie' ? 0x1a6a99 : 0, emissiveIntensity: .5 }),
-  };
-}
-function makeSoldier(side, cls, ally, name) {
-  const mt = soldierMats(side, cls, ally), look = mt.look;
-  const root = new THREE.Group();
-  const hips = new THREE.Group(); hips.position.y = .95; root.add(hips);
-  const add = (parent, geo, mat, x, y, z, shadow = true) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = shadow; parent.add(m); return m; };
-  add(hips, gg('pelvis', () => new THREE.BoxGeometry(.34, .2, .22)), mt.pants, 0, 0, 0);
-  add(hips, gg('belt', () => new THREE.BoxGeometry(.36, .05, .24)), mt.gear, 0, .09, 0);
-  // pernas: quadril -> joelho -> tornozelo
-  const legs = [];
-  for (const sx of [-1, 1]) {
-    const hip = new THREE.Group(); hip.position.set(sx * .1, -.05, 0); hips.add(hip);
-    add(hip, gg('thigh', () => { const g = new THREE.CylinderGeometry(.085, .065, .45, 10); g.translate(0, -.225, 0); return g; }), mt.pants, 0, 0, 0);
-    if (side === 1 || look === 'vest') add(hip, gg('pad', () => new THREE.BoxGeometry(.12, .08, .05)), mt.gear, 0, -.44, -.07);
-    const knee = new THREE.Group(); knee.position.y = -.45; hip.add(knee);
-    add(knee, gg('shin', () => { const g = new THREE.CylinderGeometry(.062, .048, .43, 10); g.translate(0, -.215, 0); return g; }), mt.pants, 0, 0, 0);
-    const foot = add(knee, gg('foot', () => new THREE.BoxGeometry(.1, .085, .26)), mt.boot, 0, -.41, -.05);
-    legs.push({ hip, knee, foot });
-  }
-  // tronco
-  const spine = new THREE.Group(); spine.position.y = .1; hips.add(spine);
-  const chest = new THREE.Group(); chest.position.y = .22; spine.add(chest);
-  add(spine, gg('belly', () => new THREE.CylinderGeometry(.16, .155, .26, 12)), mt.shirt, 0, .08, 0);
-  add(chest, gg('torso', () => { const g = new THREE.CylinderGeometry(.19, .165, .42, 12); g.scale(1, 1, .72); return g; }), mt.shirt, 0, .08, 0);
-  if (side === 1 || look === 'vest') {
-    add(chest, gg('carrier', () => new THREE.BoxGeometry(.36, .36, .27)), mt.gear, 0, .08, 0);
-    for (const px of [-.1, 0, .1]) add(chest, gg('mpouch', () => new THREE.BoxGeometry(.075, .11, .05)), mt.gear, px, -.02, -.155);
-    if (look === 'vest') for (const px of [-.12, .12]) add(chest, gg('charge', () => { const g = new THREE.CylinderGeometry(.025, .025, .14, 8); return g; }), mt.accent, px, .17, -.15);
-  }
-  if (look === 'hoodie') { add(chest, gg('hood', () => new THREE.SphereGeometry(.17, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)), mt.shirt, 0, .3, .07).scale.set(1, .7, 1); add(chest, gg('bag', () => new THREE.BoxGeometry(.3, .36, .14)), mt.gear, 0, .06, .2); add(chest, gg('ant', () => new THREE.CylinderGeometry(.006, .006, .4, 5)), mt.accent, .1, .4, .24); }
-  if (look === 'jacket') { add(chest, gg('duffel', () => { const g = new THREE.CylinderGeometry(.12, .12, .5, 10); g.rotateZ(Math.PI / 2); return g; }), mt.gear, 0, .02, .2); add(chest, gg('collar', () => new THREE.CylinderGeometry(.14, .17, .08, 12)), mt.shirt, 0, .31, 0); }
-  if (look === 'medic') { add(chest, gg('medkit', () => new THREE.BoxGeometry(.28, .3, .14)), mt.accent, 0, .08, .2); add(chest, gg('cross1', () => new THREE.BoxGeometry(.03, .14, .145)), M({ color: 0xc81e1e }), 0, .08, .21, false); add(chest, gg('cross2', () => new THREE.BoxGeometry(.14, .03, .145)), M({ color: 0xc81e1e }), 0, .08, .21, false); }
-  if (look === 'eng') { add(chest, gg('toolbag', () => new THREE.BoxGeometry(.26, .2, .14)), mt.gear, 0, -.05, .2); add(hips, gg('tool', () => new THREE.BoxGeometry(.05, .16, .05)), mt.accent, .19, -.05, -.02); }
-  if (look === 'swat') add(chest, gg('backpanel', () => new THREE.BoxGeometry(.32, .3, .05)), mt.gear, 0, .1, .16);
-  // cabeça
-  const neck = new THREE.Group(); neck.position.y = .32; chest.add(neck);
-  add(neck, gg('neck', () => new THREE.CylinderGeometry(.055, .06, .1, 8)), mt.skin, 0, .02, 0);
-  const head = new THREE.Group(); head.position.y = .15; neck.add(head);
-  add(head, gg('head', () => { const g = new THREE.SphereGeometry(.112, 16, 12); g.scale(.92, 1.05, 1); return g; }), (side === 0 && look !== 'tee') ? mt.mask : mt.skin, 0, 0, 0);
-  add(head, gg('nose', () => new THREE.BoxGeometry(.03, .045, .04)), (side === 0 && look !== 'tee') ? mt.mask : mt.skin, 0, -.01, -.108, false);
-  if (side === 0) {
-    if (look === 'tee') add(head, gg('bandana', () => new THREE.SphereGeometry(.118, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2.4)), mt.accent, 0, .015, 0);
-    else add(head, gg('eyes', () => new THREE.BoxGeometry(.13, .03, .02)), mt.skin, 0, .02, -.103, false);
-  } else {
-    if (look === 'marks') { add(head, gg('boonie', () => new THREE.CylinderGeometry(.13, .2, .08, 14)), mt.shirt, 0, .08, 0); }
-    else {
-      add(head, gg('helmet', () => new THREE.SphereGeometry(.13, 16, 10, 0, Math.PI * 2, 0, Math.PI / 1.85)), mt.helm, 0, .025, .005);
-      add(head, gg('nvg', () => new THREE.BoxGeometry(.05, .04, .03)), WM.steel, 0, .1, -.12, false);
-      if (look === 'swat') add(head, gg('visor', () => new THREE.BoxGeometry(.2, .06, .03)), WM.glass, 0, .01, -.115, false);
-    }
-    add(head, gg('goggles', () => new THREE.BoxGeometry(.13, .035, .02)), WM.glass, 0, .025, -.103, false);
-  }
-  // braços (IK no espaço do peito)
-  const arms = [];
-  for (const sx of [-1, 1]) {
-    const upper = new THREE.Mesh(gg('uarm', () => limbGeo(.055, .045)), mt.shirt); upper.castShadow = true; chest.add(upper);
-    const fore = new THREE.Mesh(gg('farm', () => limbGeo(.045, .035)), mt.shirt); fore.castShadow = true; chest.add(fore);
-    const hand = new THREE.Mesh(gg('hand', () => new THREE.BoxGeometry(.075, .035, .1)), mt.glove); hand.castShadow = true; chest.add(hand);
-    const shoulder = add(chest, gg('shoulder', () => new THREE.SphereGeometry(.065, 10, 8)), side === 1 ? mt.gear : mt.shirt, sx * .2, .22, 0);
-    if (look === 'medic') add(chest, gg('armband', () => new THREE.CylinderGeometry(.058, .058, .05, 10)), mt.accent, sx * .22, .12, 0, false);
-    arms.push({ upper, fore, hand, S: new THREE.Vector3(sx * .2, .22, .0), E: new THREE.Vector3(), T: new THREE.Vector3(), pole: new THREE.Vector3(sx * .7, -1, .45).normalize() });
-  }
-  // arma
-  const gunHolder = new THREE.Group(); gunHolder.position.set(.07, .16, -.2); chest.add(gunHolder);
-  const shield = makeShieldMesh(); shield.position.set(-.12, .02, -.36); shield.visible = false; chest.add(shield);
-  const bomb = add(chest, gg('bombpack', () => new THREE.BoxGeometry(.26, .2, .1)), M({ color: 0x8c1f22, emissive: 0xff2a2a, emissiveIntensity: .5 }), 0, .12, .22);
-  bomb.visible = false;
-  const tag = makeTag(ally); tag.position.y = 2.15; tag.visible = false; root.add(tag);
-  const xray = new THREE.Mesh(gg('xray', () => new THREE.CapsuleGeometry(.3, 1.1, 4, 8)), new THREE.MeshBasicMaterial({ color: 0xff3b4c, transparent: true, opacity: .5, depthTest: false, fog: false }));
-  xray.position.y = .9; xray.renderOrder = 999; xray.visible = false; root.add(xray);
-  const flashS = new THREE.Sprite(new THREE.SpriteMaterial({ map: texSoft, color: 0xffc670, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); flashS.scale.set(.35, .35, 1); flashS.visible = false; root.add(flashS);
-  root.visible = false; scene.add(root);
-  const s = { root, hips, spine, chest, neck, head, legs, arms, gunHolder, gun: null, gunId: null, shield, bomb, tag, xray, flashS, mats: Object.values(mt).filter((x) => x && x.isMaterial), phase: 0, fall: 0, recoil: 0, stepPh: 0 };
-  return s;
-}
-function makeShieldMesh() {
-  const g = new THREE.Group();
-  const plate = new THREE.Mesh(gg('shieldPlate', () => { const p = prof([[-.3, -.45], [.3, -.45], [.3, .4], [.2, .48], [-.2, .48], [-.3, .4]], .03, [[[-.12, .2], [.12, .2], [.12, .3], [-.12, .3]]]); p.rotateY(Math.PI / 2); return p; }), M({ color: 0x1b1e22, roughness: .5, metalness: .4 }));
-  plate.castShadow = true; g.add(plate);
-  const win = new THREE.Mesh(gg('shieldWin', () => new THREE.PlaneGeometry(.24, .1)), M({ color: 0x5a7486, transparent: true, opacity: .45, metalness: .8, roughness: .05 })); win.position.set(0, .25, -.02); win.rotation.y = Math.PI; g.add(win);
-  return g;
-}
-function setSoldierGun(s, id) {
-  if (s.gunId === id) return;
-  if (s.gun) s.gunHolder.remove(s.gun);
-  s.gunId = id; s.gun = makeGun(id, true); s.gunHolder.add(s.gun);
-  const d = s.gun.userData.def;
-  // mãos: direita no punho, esquerda no guarda-mão (pistola: duas mãos juntas)
-  s.gripLocal = new THREE.Vector3(0, d.grip[1], -d.grip[0]); s.foreLocal = new THREE.Vector3(d.pistol || d.knife || d.nade ? -.02 : 0, d.fore[1], -d.fore[0]);
-  s.gunHolder.position.set(.07, d.pistol || d.knife || d.nade ? .2 : .16, d.pistol || d.knife || d.nade ? -.34 : -.2);
-}
-function disposeSoldier(s) { scene.remove(s.root); s.mats.forEach((m) => m.dispose()); s.tag.material.map.dispose(); s.tag.material.dispose(); }
-function poseSoldier(s, o, dt) {
-  // o: { speed, crouch, pitch, alive, deadT, reload, shieldUp }
-  const k = Math.min(1, dt * 10);
-  if (!o.alive) {
-    s.fall = Math.min(1, s.fall + dt * 2.6);
-    const f = 1 - Math.pow(1 - s.fall, 3);
-    s.root.rotation.x = f * 1.48; s.hips.position.y = .95 - f * .65;
-    s.legs.forEach((L, i) => { L.hip.rotation.x = f * (.3 + i * .25); L.knee.rotation.x = -f * .4; });
-    s.spine.rotation.x = f * .2; s.gunHolder.visible = false; s.shield.visible = false;
-    s.arms.forEach((A, i) => { A.T.set(A.S.x * 2.2, A.S.y + .25, .1); });
-  } else {
-    s.fall = 0; s.root.rotation.x = 0; s.gunHolder.visible = true;
-    const sp = Math.min(o.speed, 6), cr = o.crouch;
-    s.phase += dt * sp * 1.9;
-    const amp = Math.min(1, sp / 4.5) * (1 - cr * .5);
-    s.hips.position.y = .95 - cr * .38 + Math.abs(Math.sin(s.phase)) * .03 * amp;
-    s.legs.forEach((L, i) => {
-      const ph = s.phase + (i ? Math.PI : 0), swing = Math.sin(ph) * .6 * amp;
-      L.hip.rotation.x += ((cr * 1.15 + swing) - L.hip.rotation.x) * k * 1.5;
-      const bend = cr * 1.95 + Math.max(0, Math.sin(ph - 1.1)) * 1.0 * amp + .05;
-      L.knee.rotation.x += (-bend - L.knee.rotation.x) * k * 1.5;
-      L.foot.rotation.x = -L.hip.rotation.x - L.knee.rotation.x * .8 + (cr ? .3 : 0);
-    });
-    s.spine.rotation.x = clamp(o.pitch, -1, 1) * .35 + cr * .15 + Math.sin(s.phase * 2) * .02 * amp;
-    s.spine.rotation.y = Math.sin(s.phase) * .05 * amp;
-    s.neck.rotation.x = clamp(o.pitch, -1, 1) * .45;
-    s.recoil = Math.max(0, s.recoil - dt * 8);
-    s.gunHolder.rotation.x = clamp(o.pitch, -1, 1) * .25 + s.recoil * .12;
-    s.shield.visible = !!o.shieldUp;
-    // alvos das mãos (no espaço do peito)
-    if (s.gun) {
-      const h = s.gunHolder; h.updateMatrix();
-      const R = s.arms[1], Lf = s.arms[0];
-      R.T.copy(s.gripLocal).applyMatrix4(h.matrix);
-      if (o.shieldUp) Lf.T.set(-.16, .1, -.3);
-      else if (o.reload > 0) { const m = s.gun.userData.def.magDrop; Lf.T.set(.03, .0 + Math.sin(o.reload * Math.PI) * -.08, -.2); }
-      else Lf.T.copy(s.foreLocal).applyMatrix4(h.matrix);
-      s.gun.userData.mag.position.y = o.reload > .25 && o.reload < .7 ? -.25 : 0;
-      s.gun.userData.mag.visible = !(o.reload > .4 && o.reload < .55);
-    }
-  }
-  for (const A of s.arms) {
-    solveIK(A.S, A.T, .31, .29, A.pole, A.E);
-    placeLimb(A.upper, A.S, A.E); placeLimb(A.fore, A.E, A.T);
-    A.hand.position.copy(A.T); A.hand.quaternion.copy(A.fore.quaternion); A.hand.rotateX(Math.PI / 2);
-  }
-}
+/* soldados: ver 35-soldier.js */
 function makeTag(ally) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64;
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -1104,13 +950,10 @@ function buildVmArms(side, cls) {
   if (vmArms.side === side && vmArms.cls === cls) return;
   vmArms.parts.forEach((p) => { vmScene.remove(p.upper); vmScene.remove(p.fore); vmScene.remove(p.hand); vmScene.remove(p.cuff); });
   const mt = soldierMats(side, cls, true);
-  const sleeve = mt.shirt, glove = mt.glove;
+  const sleeve = mt.top, glove = mt.glove;
   vmArms.parts = [-1, 1].map((sx) => {
-    const upper = new THREE.Mesh(limbGeo(.06, .052), sleeve), fore = new THREE.Mesh(limbGeo(.052, .04), sleeve), cuff = new THREE.Mesh(limbGeo(.047, .047), glove);
-    const hand = new THREE.Group();
-    const palm = new THREE.Mesh(new THREE.BoxGeometry(.08, .03, .09), glove); hand.add(palm);
-    for (let f = 0; f < 4; f++) { const fg = new THREE.Mesh(new THREE.BoxGeometry(.017, .018, .06), glove); fg.position.set(-.03 + f * .02, -.018, -.05); fg.rotation.x = .9; hand.add(fg); }
-    const th = new THREE.Mesh(new THREE.BoxGeometry(.018, .018, .055), glove); th.position.set(sx * .045, .0, -.02); th.rotation.y = -sx * .6; hand.add(th);
+    const upper = new THREE.Mesh(upperArmGeo(), sleeve), fore = new THREE.Mesh(foreArmGeo(), sleeve), cuff = new THREE.Mesh(limbGeo(.047, .047), glove);
+    const hand = new THREE.Mesh(handGeo(), glove); hand.scale.set(sx < 0 ? -1.15 : 1.15, 1.15, 1.15);
     [upper, fore, cuff, hand].forEach((m) => vmScene.add(m));
     return { upper, fore, hand, cuff, S: new THREE.Vector3(sx > 0 ? .2 : -.12, sx > 0 ? -.34 : -.3, sx > 0 ? .1 : -.05), E: new THREE.Vector3(), T: new THREE.Vector3(), pole: new THREE.Vector3(sx * .8, -1, .2).normalize() };
   });
@@ -1139,6 +982,304 @@ const worldBomb = new THREE.Group();
   worldBomb.add(body, led); worldBomb.userData.led = led; worldBomb.visible = false; scene.add(worldBomb);
 }
 const bombLight = new THREE.PointLight(0xff2020, 0, 6, 2); scene.add(bombLight);
+/* =================== soldados realistas (personagens originais) =================== */
+const V2 = (r, y) => new THREE.Vector2(r, y);
+const lathe = (pts, segs = 14) => new THREE.LatheGeometry(pts.map(([r, y]) => V2(r, y)), segs);
+/* geometria de membro com músculo (altura 1, eixo +y aponta para a ponta) */
+const upperArmGeo = () => gg('uarm2', () => lathe([[.001, -.52], [.05, -.5], [.062, -.38], [.06, -.15], [.052, .1], [.046, .4], [.042, .5], [.001, .52]], 12));
+const foreArmGeo = () => gg('farm2', () => lathe([[.001, -.52], [.044, -.5], [.05, -.28], [.046, 0], [.037, .3], [.031, .5], [.001, .52]], 12));
+/* mão com dedos dobrados (eixo +y = do pulso para os dedos) */
+function handGeo() {
+  return gg('hand2', () => {
+    const parts = [];
+    const palm = new THREE.BoxGeometry(.078, .085, .03); palm.translate(0, .045, 0); parts.push(palm);
+    for (let f = 0; f < 4; f++) {
+      const x = -.028 + f * .019, len = [.036, .042, .04, .032][f];
+      const p1 = new THREE.CylinderGeometry(.0085, .009, len, 6); p1.translate(0, len / 2, 0); p1.rotateX(.9); p1.translate(x, .088, -.004); parts.push(p1);
+      const p2 = new THREE.CylinderGeometry(.0075, .0085, len * .8, 6); p2.translate(0, len * .4, 0); p2.rotateX(2.1); p2.translate(x, .088 + Math.cos(.9) * len, -.004 - Math.sin(.9) * len); parts.push(p2);
+    }
+    const th = new THREE.CylinderGeometry(.009, .011, .05, 6); th.translate(0, .025, 0); th.rotateZ(-.9); th.rotateX(.6); th.translate(.035, .02, -.01); parts.push(th);
+    return mergeGeometries(parts);
+  });
+}
+/* ---------- texturas de roupa e pele ---------- */
+function fabricTex(base, opts = {}) {
+  return canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    if (opts.camo) for (let i = 0; i < 180; i++) { g.fillStyle = pick(opts.camo); g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, rnd(6, 26), rnd(4, 14), Math.random() * 3, 0, 7); g.fill(); }
+    for (let y = 0; y < h; y += 2) { g.fillStyle = `rgba(0,0,0,${y % 4 ? .04 : .08})`; g.fillRect(0, y, w, 1); }
+    for (let x = 0; x < w; x += 3) { g.fillStyle = 'rgba(255,255,255,.025)'; g.fillRect(x, 0, 1, h); }
+    // dobras e costuras
+    for (let i = 0; i < 10; i++) { const y = Math.random() * h, gr = g.createLinearGradient(0, y - 8, 0, y + 8); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(.5, 'rgba(0,0,0,.14)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, y - 8, w, 16); }
+    g.strokeStyle = 'rgba(0,0,0,.28)'; g.setLineDash([3, 3]); g.lineWidth = 1.2; g.beginPath(); g.moveTo(w * .5, 0); g.lineTo(w * .5, h); g.stroke(); g.setLineDash([]);
+    if (opts.molle) { g.fillStyle = 'rgba(0,0,0,.35)'; for (let y = 30; y < h - 20; y += 26) g.fillRect(14, y, w - 28, 5); }
+    specks(g, w, h, 4000, .07);
+  });
+}
+const SKINS = ['#d6a688', '#c18e6c', '#a5714f', '#8a5a3c', '#6e452d', '#e2b79a'];
+const HAIRS = ['#1d1612', '#2e2018', '#4a3322', '#6b4e33', '#8a8a86', '#1a1a1a'];
+function faceTex(skin, beard, hairCol) {
+  return canvasTex(256, 128, (g, w, h) => {
+    g.fillStyle = skin; g.fillRect(0, 0, w, h);
+    const cx = w * .75;
+    // volume do rosto
+    const gr = g.createRadialGradient(cx, h * .5, 4, cx, h * .5, w * .25); gr.addColorStop(0, 'rgba(255,230,210,.12)'); gr.addColorStop(1, 'rgba(60,30,20,.18)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    // órbitas, sobrancelhas, bochechas, boca
+    for (const sx of [-1, 1]) {
+      const ex = cx + sx * 14;
+      g.fillStyle = 'rgba(60,35,25,.28)'; g.beginPath(); g.ellipse(ex, h * .45, 9, 5, 0, 0, 7); g.fill();
+      g.fillStyle = hairCol; g.save(); g.translate(ex, h * .37); g.rotate(sx * -.12); g.fillRect(-9, -1.5, 18, 3.5); g.restore();
+      g.fillStyle = 'rgba(200,90,80,.10)'; g.beginPath(); g.ellipse(cx + sx * 20, h * .57, 9, 6, 0, 0, 7); g.fill();
+    }
+    g.fillStyle = 'rgba(120,55,50,.55)'; g.beginPath(); g.ellipse(cx, h * .655, 9, 2.4, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(60,25,20,.5)'; g.fillRect(cx - 9, h * .652, 18, 1);
+    g.fillStyle = 'rgba(60,35,25,.2)'; g.fillRect(cx - 2, h * .48, 4, 12); // sombra do nariz
+    if (beard) { g.fillStyle = hairCol; g.globalAlpha = beard === 2 ? .85 : .35; for (let i = 0; i < 1600; i++) { const a = Math.random() * Math.PI, r = rnd(10, 34); const x = cx + Math.cos(a) * r * 1.1, y = h * .6 + Math.sin(a) * r * .7; if (y > h * .52) g.fillRect(x, y, 1.5, 1.5); } g.globalAlpha = 1; }
+    // orelha e linha do cabelo nas laterais
+    g.fillStyle = hairCol; g.globalAlpha = .9; g.fillRect(0, 0, w, h * .18); g.globalAlpha = 1;
+  });
+}
+const hairTex = canvasTex(128, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { g.strokeStyle = `rgba(0,0,0,${rnd(.05, .25)})`; g.beginPath(); const x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); g.lineTo(x + rnd(-2, 2), y + rnd(3, 8)); g.stroke(); } });
+const knitTex = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 4) for (let x = 0; x < w; x += 4) { g.fillStyle = `rgba(0,0,0,${(x + y) % 8 ? .12 : .22})`; g.fillRect(x, y, 3, 3); } });
+/* paletas por lado (originais: insurgentes de roupa civil x forças especiais) */
+const PAL = {
+  t: { tops: ['#5b4632', '#3d4a3a', '#6e5b45', '#4a3f38', '#7a6a4c', '#2f3438'], pants: ['#4f5a6b', '#6e6047', '#5e5a4c', '#3c3a35'] },
+  ct: { camo: ['#46566a', '#3b4757', '#555f66'], swat: ['#1d2126', '#16191d', '#24282d'] },
+};
+const texCache = {};
+const tc = (k, f) => texCache[k] || (texCache[k] = f());
+function soldierMats(side, cls, ally) {
+  const c = CLASSES[side].find((x) => x.id === cls) || CLASSES[side][0], look = c.look;
+  const skin = pick(SKINS), hairCol = pick(HAIRS);
+  let top, pants;
+  if (side === 0) {
+    const tcol = look === 'hoodie' ? '#2e3238' : look === 'jacket' ? '#5b4632' : look === 'vest' ? '#6a5a3a' : pick(PAL.t.tops);
+    top = M({ map: tc('t' + tcol, () => fabricTex(tcol)), roughness: .95 });
+    const pcol = pick(PAL.t.pants); pants = M({ map: tc('p' + pcol, () => fabricTex(pcol)), roughness: .95 });
+  } else {
+    const swat = look === 'swat';
+    const key = swat ? 'swat' : look === 'marks' ? 'marks' : 'ct';
+    const base = swat ? '#23272c' : look === 'marks' ? '#5a6448' : '#4a586a';
+    const camo = swat ? ['#1a1d21', '#2b2f34'] : look === 'marks' ? ['#4a5338', '#6b7353', '#3a4030'] : PAL.ct.camo;
+    top = M({ map: tc('ct' + key, () => fabricTex(base, { camo })), roughness: .95 });
+    pants = M({ map: tc('ctp' + key, () => fabricTex(base, { camo })), roughness: .95 });
+  }
+  const beard = side === 0 ? pick([0, 1, 2, 2]) : pick([0, 0, 1]);
+  return {
+    top, pants, look, skinHex: skin, hairHex: hairCol,
+    face: M({ map: faceTex(skin, beard, hairCol), roughness: .65 }),
+    skin: M({ color: skin, roughness: .65 }),
+    hair: M({ map: hairTex, color: hairCol, roughness: .9 }),
+    eye: M({ color: 0xf2efe8, roughness: .2 }), iris: M({ color: 0x2a1d14, roughness: .15 }),
+    gear: M({ map: tc('gear' + side, () => fabricTex(side === 0 ? '#4e4532' : '#22272c', { molle: true })), roughness: .9 }),
+    strap: M({ color: side === 0 ? 0x3a3426 : 0x15181b, roughness: .85 }),
+    boot: M({ color: 0x2a221b, roughness: .75 }), sole: M({ color: 0x141210, roughness: 1 }),
+    glove: M({ color: side === 0 ? 0x3a3326 : 0x15181b, roughness: .85 }),
+    helm: M({ map: tc('helm' + look, () => fabricTex(look === 'swat' ? '#1b1e22' : '#3e4a3c')), roughness: .6, metalness: .1 }),
+    mask: M({ map: knitTex, color: pick([0x2a2622, 0x3b3b3b, 0x4d4436]), roughness: 1 }),
+    shemagh: M({ map: tc('shem', () => canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#d7cdb6'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(30,30,30,.55)'; g.lineWidth = 2; for (let i = 0; i < w; i += 10) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); } })), roughness: 1 }),
+    accent: M({ color: look === 'medic' ? 0xf2f2f2 : look === 'eng' ? 0xd6a92a : look === 'hoodie' ? 0x4cc1ff : 0x8b1a1a, roughness: .6, emissive: look === 'hoodie' ? 0x1a6a99 : 0, emissiveIntensity: .5 }),
+    metal: WM.steel,
+  };
+}
+/* agrupa as peças rígidas de cada osso por material (menos chamadas de desenho) */
+function rigid(parent, parts, shadow = true) {
+  const by = new Map();
+  for (const [geo, mat] of parts) { if (!by.has(mat)) by.set(mat, []); by.get(mat).push(geo); }
+  for (const [mat, list] of by) { const m = new THREE.Mesh(list.length > 1 ? mergeGeometries(list) : list[0], mat); m.castShadow = shadow; m.receiveShadow = false; parent.add(m); }
+}
+const T3 = (geo, x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) => { const g = geo.clone(); g.scale(sx, sy, sz); if (rx) g.rotateX(rx); if (ry) g.rotateY(ry); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
+const BOX = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const CYL = (r1, r2, h, s = 12) => new THREE.CylinderGeometry(r1, r2, h, s);
+const SPH = (r, ws = 14, hs = 10, ps = 0, pl = Math.PI * 2, ts = 0, tl = Math.PI) => new THREE.SphereGeometry(r, ws, hs, ps, pl, ts, tl);
+function skullGeo() {
+  return gg('skull', () => {
+    const g = SPH(.105, 26, 20), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      if (y < -.015) { const t = (-y - .015) / .09; x *= 1 - t * .32; if (z < 0) z *= 1 - t * .12; } // mandíbula e queixo
+      if (z < -.06 && y > -.03 && y < .04) z -= .006; // maçãs do rosto
+      if (y > .04 && z > 0) z *= 1.06; // nuca
+      p.setXYZ(i, x * .93, y * 1.13, z * 1.03);
+    }
+    g.computeVertexNormals(); return g;
+  });
+}
+function makeSoldier(side, cls, ally, name) {
+  const mt = soldierMats(side, cls, ally), look = mt.look;
+  const root = new THREE.Group();
+  const hips = new THREE.Group(); hips.position.y = .95; root.add(hips);
+  // quadril e cinto
+  rigid(hips, [
+    [T3(gg('pelvis2', () => lathe([[.135, -.12], [.162, -.04], [.16, .05], [.15, .1]])), 0, 0, 0, 0, 0, 0, 1, 1, .74), mt.pants],
+    [T3(gg('belt2', () => CYL(.163, .163, .055, 16)), 0, .085, 0, 0, 0, 0, 1, 1, .76), mt.strap],
+    [T3(gg('buckle', () => BOX(.05, .04, .012)), 0, .085, -.125), mt.metal],
+    ...(side === 1 || look === 'vest' ? [[T3(gg('holster', () => BOX(.05, .14, .09)), .17, -.03, .02), mt.gear], [T3(gg('dump', () => BOX(.12, .1, .06)), -.08, -.02, .13), mt.gear]] : []),
+  ]);
+  // pernas
+  const legs = [];
+  for (const sx of [-1, 1]) {
+    const hip = new THREE.Group(); hip.position.set(sx * .092, -.05, 0); hips.add(hip);
+    rigid(hip, [
+      [gg('thigh2', () => lathe([[.001, .02], [.08, 0], [.092, -.08], [.088, -.2], [.074, -.36], [.062, -.45], [.001, -.46]])), mt.pants],
+      [T3(gg('cargo', () => BOX(.05, .11, .1)), sx * .085, -.2, 0), mt.pants],
+      [T3(gg('cargoflap', () => BOX(.052, .02, .102)), sx * .085, -.145, 0), mt.strap],
+    ]);
+    const knee = new THREE.Group(); knee.position.y = -.45; hip.add(knee);
+    const kneeParts = [[gg('shin2', () => lathe([[.001, .01], [.062, 0], [.068, -.1], [.066, -.18], [.052, -.32], [.045, -.42], [.001, -.43]])), mt.pants]];
+    if (side === 1 || look === 'vest') kneeParts.push([T3(gg('kneepad2', () => SPH(.06, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2)), 0, -.02, -.05, -1.57, 0, 0, 1.1, .5, 1.2), mt.gear]);
+    rigid(knee, kneeParts);
+    const foot = new THREE.Group(); foot.position.y = -.41; knee.add(foot);
+    rigid(foot, [
+      [T3(gg('bootTop', () => CYL(.058, .052, .14, 12)), 0, .03, 0), mt.boot],
+      [T3(gg('bootFoot', () => BOX(.095, .07, .2)), 0, -.025, -.045), mt.boot],
+      [T3(gg('bootToe', () => SPH(.05, 10, 8)), 0, -.03, -.14, 0, 0, 0, .95, .7, .9), mt.boot],
+      [T3(gg('sole', () => BOX(.1, .022, .27)), 0, -.065, -.055), mt.sole],
+      [T3(gg('laces', () => BOX(.04, .006, .09)), 0, .012, -.07, -.6), mt.strap],
+    ]);
+    legs.push({ hip, knee, foot });
+  }
+  // tronco
+  const spine = new THREE.Group(); spine.position.y = .1; hips.add(spine);
+  rigid(spine, [[T3(gg('belly2', () => lathe([[.14, -.06], [.148, .05], [.155, .16]])), 0, 0, 0, 0, 0, 0, 1, 1, .72), mt.top]]);
+  const chest = new THREE.Group(); chest.position.y = .22; spine.add(chest);
+  const breath = new THREE.Group(); chest.add(breath);
+  const chestParts = [
+    [T3(gg('torso2', () => lathe([[.15, -.08], [.162, .0], [.185, .1], [.2, .19], [.198, .25], [.17, .3], [.11, .335], [.05, .345]], 16)), 0, 0, 0, 0, 0, 0, 1, 1, .66), mt.top],
+    [T3(gg('trap', () => SPH(.07, 10, 8)), -.1, .3, .01, 0, 0, 0, 1.2, .55, .9), mt.top], [T3(gg('trap', () => SPH(.07, 10, 8)), .1, .3, .01, 0, 0, 0, 1.2, .55, .9), mt.top],
+  ];
+  if (side === 1 || look === 'vest') {
+    chestParts.push([T3(gg('plateF', () => BOX(.32, .34, .05)), 0, .14, -.125), mt.gear], [T3(gg('plateB', () => BOX(.32, .36, .05)), 0, .15, .125), mt.gear],
+      [T3(gg('cumm', () => CYL(.17, .17, .14, 16)), 0, .02, 0, 0, 0, 0, 1, 1, .78), mt.gear],
+      [T3(gg('shstrap', () => BOX(.05, .03, .26)), -.1, .31, 0), mt.strap], [T3(gg('shstrap', () => BOX(.05, .03, .26)), .1, .31, 0), mt.strap]);
+    for (const px of [-.1, 0, .1]) chestParts.push([T3(gg('magp', () => BOX(.07, .12, .045)), px, .07, -.17), mt.gear], [T3(gg('magflap', () => BOX(.072, .02, .05)), px, .135, -.17), mt.strap]);
+    chestParts.push([T3(gg('radio', () => BOX(.05, .12, .04)), -.13, .24, -.155), mt.strap], [T3(gg('antenna', () => CYL(.004, .004, .18, 5)), -.14, .38, -.15), mt.strap]);
+    if (look === 'vest') for (const px of [-.12, .12]) chestParts.push([T3(gg('charge', () => CYL(.024, .024, .14, 8)), px, .26, -.16), mt.accent]);
+  } else {
+    chestParts.push([T3(gg('collar2', () => CYL(.09, .12, .05, 14)), 0, .33, 0, 0, 0, 0, 1, 1, .85), mt.top]);
+    if (look === 'jacket') chestParts.push([T3(gg('jzip', () => BOX(.008, .32, .01)), 0, .14, -.135), mt.metal], [T3(gg('duffel', () => CYL(.11, .11, .48, 12)), 0, .02, .19, 0, 0, Math.PI / 2), mt.strap]);
+    if (look === 'hoodie') chestParts.push([T3(gg('hood2', () => SPH(.15, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2)), 0, .3, .08, -.5, 0, 0, 1, .7, 1), mt.top], [T3(gg('bag2', () => BOX(.28, .34, .13)), 0, .1, .18), mt.strap], [T3(gg('ant2', () => CYL(.005, .005, .4, 5)), .1, .45, .22), mt.accent], [T3(gg('pocket', () => BOX(.22, .08, .02)), 0, .02, -.12), mt.top]);
+    if (look === 'tee') chestParts.push([T3(gg('sling', () => BOX(.04, .5, .02)), 0, .15, -.12, 0, 0, .7), mt.strap]);
+  }
+  if (look === 'medic') chestParts.push([T3(gg('medkit2', () => BOX(.26, .28, .12)), 0, .12, .2), mt.accent], [T3(gg('crossA', () => BOX(.03, .13, .125)), 0, .12, .205), M({ color: 0xc81e1e })], [T3(gg('crossB', () => BOX(.13, .03, .125)), 0, .12, .205), M({ color: 0xc81e1e })]);
+  if (look === 'eng') chestParts.push([T3(gg('toolbag2', () => BOX(.26, .2, .13)), 0, .02, .2), mt.strap], [T3(gg('wrench', () => BOX(.02, .14, .02)), .14, .2, -.17), mt.accent]);
+  if (look === 'marks') chestParts.push([T3(gg('ghillie', () => SPH(.2, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)), 0, .26, .06, 0, 0, 0, 1.05, .6, 1), M({ color: 0x5a6346, roughness: 1 })]);
+  rigid(breath, chestParts);
+  // cabeça
+  const neck = new THREE.Group(); neck.position.y = .33; chest.add(neck);
+  rigid(neck, [[T3(gg('neck2', () => CYL(.048, .056, .11, 10)), 0, .03, .005), mt.skin]]);
+  const head = new THREE.Group(); head.position.y = .14; neck.add(head);
+  const masked = side === 0 && (look === 'hoodie' || look === 'vest');
+  const headParts = [
+    [skullGeo(), masked ? mt.mask : mt.face],
+    [T3(gg('ear', () => SPH(.024, 8, 6)), -.098, .0, .005, 0, 0, 0, .45, 1, .75), mt.skin], [T3(gg('ear', () => SPH(.024, 8, 6)), .098, .0, .005, 0, 0, 0, .45, 1, .75), mt.skin],
+    [T3(gg('nose2', () => { const c = new THREE.ConeGeometry(.016, .042, 4); c.rotateY(Math.PI / 4); return c; }), 0, -.006, -.104, -.25, 0, 0, 1, 1, .9), masked ? mt.mask : mt.skin],
+    [T3(gg('eyeW', () => SPH(.0125, 8, 6)), -.036, .022, -.088), mt.eye], [T3(gg('eyeW', () => SPH(.0125, 8, 6)), .036, .022, -.088), mt.eye],
+    [T3(gg('iris', () => SPH(.0062, 6, 5)), -.036, .022, -.0995), mt.iris], [T3(gg('iris', () => SPH(.0062, 6, 5)), .036, .022, -.0995), mt.iris],
+  ];
+  if (side === 0) {
+    if (look === 'jacket') headParts.push([T3(gg('cap', () => SPH(.112, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)), 0, .03, .0), mt.strap], [T3(gg('brim', () => BOX(.16, .012, .09)), 0, .04, -.11, .12), mt.strap]);
+    else if (look === 'tee') headParts.push([T3(gg('shemHead', () => SPH(.116, 16, 10, 0, Math.PI * 2, 0, Math.PI / 1.9)), 0, .02, .005), mt.shemagh], [T3(gg('shemNeck', () => CYL(.085, .1, .07, 14)), 0, -.11, 0), mt.shemagh]);
+    else if (!masked) headParts.push([T3(gg('hairTop', () => SPH(.111, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.3)), 0, .022, .006), mt.hair]);
+    if (look === 'hoodie') headParts.push([T3(gg('beanie', () => SPH(.114, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.6)), 0, .03, 0), mt.mask]);
+  } else if (look === 'marks') {
+    headParts.push([T3(gg('boonie2', () => CYL(.12, .125, .06, 16)), 0, .07, 0), mt.top], [T3(gg('boonieBrim', () => CYL(.19, .19, .01, 18)), 0, .045, 0), mt.top]);
+  } else {
+    headParts.push([T3(gg('helm2', () => SPH(.13, 18, 10, 0, Math.PI * 2, 0, Math.PI / 1.8)), 0, .028, .006, 0, 0, 0, 1, 1, 1.05), mt.helm],
+      [T3(gg('helmRail', () => BOX(.012, .03, .14)), -.125, .04, 0), mt.strap], [T3(gg('helmRail', () => BOX(.012, .03, .14)), .125, .04, 0), mt.strap],
+      [T3(gg('earpro', () => CYL(.04, .04, .03, 12)), -.112, -.005, .005, 0, 0, Math.PI / 2), mt.strap], [T3(gg('earpro', () => CYL(.04, .04, .03, 12)), .112, -.005, .005, 0, 0, Math.PI / 2), mt.strap],
+      [T3(gg('nvgmount', () => BOX(.045, .035, .03)), 0, .09, -.125), mt.metal]);
+    if (look === 'swat') headParts.push([T3(gg('visor2', () => SPH(.135, 16, 6, Math.PI * 1.15, Math.PI * .7, Math.PI * .38, Math.PI * .3)), 0, .0, 0), WM.glass]);
+    else headParts.push([T3(gg('goggles2', () => BOX(.14, .035, .02)), 0, .075, -.12), WM.glass]);
+  }
+  rigid(head, headParts);
+  // braços (IK no espaço do peito)
+  const arms = [];
+  for (const sx of [-1, 1]) {
+    const upper = new THREE.Mesh(upperArmGeo(), mt.top); upper.castShadow = true; chest.add(upper);
+    const fore = new THREE.Mesh(foreArmGeo(), side === 0 && look === 'tee' ? mt.skin : mt.top); fore.castShadow = true; chest.add(fore);
+    const hand = new THREE.Mesh(handGeo(), mt.glove); hand.castShadow = true; chest.add(hand);
+    rigid(chest, [[T3(gg('delt', () => SPH(.068, 12, 10)), sx * .2, .255, .0, 0, 0, 0, 1, .9, .95), side === 1 ? mt.gear : mt.top]]);
+    if (look === 'medic') rigid(chest, [[T3(gg('armband2', () => CYL(.062, .062, .045, 12)), sx * .215, .13, 0), mt.accent]], false);
+    arms.push({ upper, fore, hand, S: new THREE.Vector3(sx * .2, .23, 0), E: new THREE.Vector3(), T: new THREE.Vector3(), pole: new THREE.Vector3(sx * .7, -1, .45).normalize() });
+  }
+  const gunHolder = new THREE.Group(); gunHolder.position.set(.07, .16, -.2); chest.add(gunHolder);
+  const shield = makeShieldMesh(); shield.position.set(-.12, .02, -.36); shield.visible = false; chest.add(shield);
+  const bomb = new THREE.Mesh(gg('bombpack', () => BOX(.26, .2, .1)), M({ color: 0x8c1f22, emissive: 0xff2a2a, emissiveIntensity: .5 })); bomb.position.set(0, .12, .23); bomb.visible = false; chest.add(bomb);
+  const tag = makeTag(ally); tag.position.y = 2.15; tag.visible = false; root.add(tag);
+  const xray = new THREE.Mesh(gg('xray', () => new THREE.CapsuleGeometry(.3, 1.1, 4, 8)), new THREE.MeshBasicMaterial({ color: 0xff3b4c, transparent: true, opacity: .5, depthTest: false, fog: false }));
+  xray.position.y = .9; xray.renderOrder = 999; xray.visible = false; root.add(xray);
+  const flashS = new THREE.Sprite(new THREE.SpriteMaterial({ map: texSoft, color: 0xffc670, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })); flashS.scale.set(.35, .35, 1); flashS.visible = false; root.add(flashS);
+  root.visible = false; scene.add(root);
+  return { root, hips, spine, chest, breath, neck, head, legs, arms, gunHolder, gun: null, gunId: null, shield, bomb, tag, xray, flashS,
+    mats: Object.values(mt).filter((x) => x && x.isMaterial && x !== WM.steel), phase: Math.random() * 6, fall: 0, recoil: 0, look: 0, breathPh: Math.random() * 6 };
+}
+function makeShieldMesh() {
+  const g = new THREE.Group();
+  const plate = new THREE.Mesh(gg('shieldPlate', () => { const p = prof([[-.3, -.45], [.3, -.45], [.3, .4], [.2, .48], [-.2, .48], [-.3, .4]], .03, [[[-.12, .2], [.12, .2], [.12, .3], [-.12, .3]]]); p.rotateY(Math.PI / 2); return p; }), M({ color: 0x1b1e22, roughness: .5, metalness: .4 }));
+  plate.castShadow = true; g.add(plate);
+  const win = new THREE.Mesh(gg('shieldWin', () => new THREE.PlaneGeometry(.24, .1)), M({ color: 0x5a7486, transparent: true, opacity: .45, metalness: .8, roughness: .05 })); win.position.set(0, .25, -.02); win.rotation.y = Math.PI; g.add(win);
+  return g;
+}
+function setSoldierGun(s, id) {
+  if (s.gunId === id) return;
+  if (s.gun) s.gunHolder.remove(s.gun);
+  s.gunId = id; s.gun = makeGun(id, true); s.gunHolder.add(s.gun);
+  const d = s.gun.userData.def, one = d.pistol || d.knife || d.nade;
+  s.gripLocal = new THREE.Vector3(0, d.grip[1], -d.grip[0]); s.foreLocal = new THREE.Vector3(one ? -.02 : 0, d.fore[1], -d.fore[0]);
+  s.gunHolder.position.set(.07, one ? .2 : .16, one ? -.34 : -.2);
+}
+function disposeSoldier(s) { scene.remove(s.root); s.mats.forEach((m) => { if (m.map && !Object.values(texCache).includes(m.map) && m.map !== hairTex && m.map !== knitTex) m.map.dispose(); m.dispose(); }); s.tag.material.map.dispose(); s.tag.material.dispose(); }
+const _hd = new THREE.Vector3();
+function poseSoldier(s, o, dt) {
+  const k = Math.min(1, dt * 10);
+  s.breathPh += dt * (o.speed > 3 ? 4.5 : 1.6);
+  if (!o.alive) {
+    s.fall = Math.min(1, s.fall + dt * 2.4);
+    const f = 1 - Math.pow(1 - s.fall, 3);
+    s.root.rotation.x = f * 1.48; s.root.rotation.z = f * .15; s.hips.position.y = .95 - f * .7;
+    s.legs.forEach((L, i) => { L.hip.rotation.x = f * (.25 + i * .3); L.knee.rotation.x = -f * (.3 + i * .4); L.foot.rotation.x = f * .6; });
+    s.spine.rotation.x = f * .15; s.neck.rotation.x = f * .5; s.neck.rotation.y = f * .6; s.gunHolder.visible = false; s.shield.visible = false;
+    s.arms.forEach((A) => A.T.set(A.S.x * 2.4, A.S.y + .2 + f * .05, .15));
+  } else {
+    s.fall = 0; s.root.rotation.x = 0; s.root.rotation.z = 0; s.gunHolder.visible = true;
+    const sp = Math.min(o.speed, 6), cr = o.crouch, run = sp > 3.5 ? 1 : sp / 3.5;
+    s.phase += dt * sp * 1.85;
+    const amp = Math.min(1, sp / 4.5) * (1 - cr * .5);
+    s.hips.position.y = .95 - cr * .38 + (Math.abs(Math.sin(s.phase)) - .5) * .045 * amp;
+    s.hips.rotation.y = Math.sin(s.phase) * .08 * amp; s.hips.rotation.z = Math.sin(s.phase) * .03 * amp;
+    s.legs.forEach((L, i) => {
+      const ph = s.phase + (i ? Math.PI : 0), swing = Math.sin(ph) * (.5 + .25 * run) * amp;
+      L.hip.rotation.x += ((cr * 1.15 + swing) - L.hip.rotation.x) * k * 1.5;
+      const bend = cr * 1.95 + Math.max(0, Math.sin(ph - 1.2)) * (.9 + .5 * run) * amp + .06;
+      L.knee.rotation.x += (-bend - L.knee.rotation.x) * k * 1.5;
+      L.foot.rotation.x = clamp(-L.hip.rotation.x - L.knee.rotation.x, -.6, .9) + (cr ? .2 : 0) + Math.max(0, -Math.sin(ph)) * .25 * amp;
+    });
+    s.spine.rotation.x = clamp(o.pitch, -1, 1) * .3 + cr * .18 + .04 * run;
+    s.spine.rotation.y = -s.hips.rotation.y * 1.2;
+    s.breath.scale.set(1 + Math.sin(s.breathPh) * .012, 1 + Math.sin(s.breathPh) * .008, 1 + Math.sin(s.breathPh) * .02);
+    s.neck.rotation.x = clamp(o.pitch, -1, 1) * .5; s.neck.rotation.y = Math.sin(s.breathPh * .35) * .06;
+    s.recoil = Math.max(0, s.recoil - dt * 8);
+    s.gunHolder.rotation.x = clamp(o.pitch, -1, 1) * .22 + s.recoil * .12; s.gunHolder.position.z = (s.gunHolder.userData.z0 ?? (s.gunHolder.userData.z0 = s.gunHolder.position.z)) + s.recoil * .03;
+    s.shield.visible = !!o.shieldUp;
+    if (s.gun) {
+      const h = s.gunHolder; h.updateMatrix();
+      const R = s.arms[1], Lf = s.arms[0];
+      R.T.copy(s.gripLocal).applyMatrix4(h.matrix);
+      if (o.shieldUp) Lf.T.set(-.16, .1, -.3);
+      else if (o.reload > 0) Lf.T.set(.04, .02 + Math.sin(o.reload * Math.PI) * -.1, -.22);
+      else Lf.T.copy(s.foreLocal).applyMatrix4(h.matrix);
+      s.gun.userData.mag.position.y = o.reload > .25 && o.reload < .7 ? -.25 : 0;
+      s.gun.userData.mag.visible = !(o.reload > .4 && o.reload < .55);
+    }
+  }
+  for (const A of s.arms) {
+    solveIK(A.S, A.T, .31, .29, A.pole, A.E);
+    placeLimb(A.upper, A.S, A.E); placeLimb(A.fore, A.E, A.T);
+    _hd.subVectors(A.T, A.E).normalize();
+    A.hand.position.copy(A.T).addScaledVector(_hd, -.05); A.hand.quaternion.copy(A.fore.quaternion);
+  }
+}
 /* =================== física simples =================== */
 let lastAxis = -1;
 function rayBox(ox, oy, oz, dx, dy, dz, b) {
@@ -1386,11 +1527,13 @@ function clearFx() {
   for (const s of sensors) scene.remove(s.m); sensors.length = 0;
   holes.forEach((h) => h.visible = false);
 }
-/* =================== rede: servidores MQTT públicos (WSS) =================== */
+/* =================== rede =================== */
+/* 1) servidores MQTT públicos (WSS): encontram a sala e servem de reserva
+   2) WebRTC: conexão direta entre os navegadores, combinada pelo MQTT (bem menos atraso) */
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
 const NET = { role: null, client: null, code: '', myId: 'h', nonce: '', lastHost: 0, broker: '', closing: false, welcomed: false };
 const isHost = () => NET.role === 'host' || NET.role === 'solo';
-const TOPIC = (sub) => 'linhadefogo/v5/' + NET.code + '/' + sub;
+const TOPIC = (sub) => 'linhadefogo/v6/' + NET.code + '/' + sub;
 const randId = (n, abc = 'abcdefghjkmnpqrstuvwxyz23456789') => { let s = ''; for (let i = 0; i < n; i++) s += abc[Math.floor(Math.random() * abc.length)]; return s; };
 
 function tryBroker(url, will) {
@@ -1417,11 +1560,91 @@ function wireClient(c, onMsg) {
   c.on('error', () => {});
 }
 function pub(sub, msg) { const c = NET.client; if (!c || !c.connected) return; try { c.publish(TOPIC(sub), JSON.stringify(msg), { qos: 0 }); } catch (e) {} }
+
+/* ---------- WebRTC ---------- */
+const RTC = { peers: new Map(), pc: null, u: null, r: null, open: false, pendingIce: [] };
+let iceCache = null;
+async function iceServers() {
+  if (iceCache) return iceCache;
+  const list = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:stun.cloudflare.com:3478' }];
+  try {
+    const username = Math.floor(Date.now() / 1000 + 8 * 3600) + ':linhadefogo';
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode('openrelayprojectsecret'), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(username));
+    list.push({ urls: ['turn:staticauth.openrelay.metered.ca:80', 'turn:staticauth.openrelay.metered.ca:443', 'turns:staticauth.openrelay.metered.ca:443?transport=tcp'], username, credential: btoa(String.fromCharCode(...new Uint8Array(sig))) });
+  } catch (e) {}
+  return (iceCache = list);
+}
+const rtcOk = () => typeof window.RTCPeerConnection === 'function';
+const parseMsg = (data) => { try { const m = JSON.parse(data); return m && typeof m === 'object' ? m : null; } catch (e) { return null; } };
+// anfitrião: abre um canal direto com cada convidado
+async function hostStartRtc(nonce) {
+  if (!rtcOk() || RTC.peers.has(nonce)) return;
+  const p = { pc: null, u: null, r: null, open: false, ice: [] }; RTC.peers.set(nonce, p);
+  try {
+    const pc = p.pc = new RTCPeerConnection({ iceServers: await iceServers() });
+    p.u = pc.createDataChannel('u', { ordered: false, maxRetransmits: 0 });
+    p.r = pc.createDataChannel('r', { ordered: true });
+    const upd = () => { p.open = p.u.readyState === 'open' && p.r.readyState === 'open'; };
+    for (const ch of [p.u, p.r]) { ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { const m = parseMsg(ev.data); if (m) { m.from = nonce; hostOnMessage(m); } }; }
+    pc.onicecandidate = (e) => { if (e.candidate) pub('c/' + nonce, { t: 'ice', c: e.candidate.toJSON() }); };
+    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') { p.open = false; } };
+    await pc.setLocalDescription(await pc.createOffer());
+    pub('c/' + nonce, { t: 'rtc', sdp: pc.localDescription.toJSON() });
+  } catch (e) { p.open = false; }
+}
+function hostRtcSignal(nonce, m) {
+  const p = RTC.peers.get(nonce); if (!p || !p.pc) return;
+  if (m.t === 'rtc' && m.sdp) p.pc.setRemoteDescription(m.sdp).then(() => { p.ice.forEach((c) => p.pc.addIceCandidate(c).catch(() => {})); p.ice = []; }).catch(() => {});
+  else if (m.t === 'ice' && m.c) { if (p.pc.remoteDescription) p.pc.addIceCandidate(m.c).catch(() => {}); else p.ice.push(m.c); }
+}
+function hostRtcDrop(nonce) { const p = RTC.peers.get(nonce); if (p) { try { p.pc.close(); } catch (e) {} RTC.peers.delete(nonce); } }
+// convidado: responde à oferta
+async function clientRtcSignal(m) {
+  if (!rtcOk()) return;
+  if (m.t === 'rtc' && m.sdp) {
+    try {
+      if (RTC.pc) { try { RTC.pc.close(); } catch (e) {} }
+      const pc = RTC.pc = new RTCPeerConnection({ iceServers: await iceServers() }); RTC.open = false;
+      pc.ondatachannel = (e) => {
+        const ch = e.channel; RTC[ch.label] = ch;
+        const upd = () => { RTC.open = !!(RTC.u && RTC.r && RTC.u.readyState === 'open' && RTC.r.readyState === 'open'); };
+        ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { const x = parseMsg(ev.data); if (x) clientOnMessage(x); };
+      };
+      pc.onicecandidate = (e) => { if (e.candidate) pub('h', { t: 'ice', from: NET.nonce, c: e.candidate.toJSON() }); };
+      pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') RTC.open = false; };
+      await pc.setRemoteDescription(m.sdp);
+      await pc.setLocalDescription(await pc.createAnswer());
+      pub('h', { t: 'rtc', from: NET.nonce, sdp: pc.localDescription.toJSON() });
+      RTC.pendingIce.forEach((c) => pc.addIceCandidate(c).catch(() => {})); RTC.pendingIce = [];
+    } catch (e) { RTC.open = false; }
+  } else if (m.t === 'ice' && m.c) {
+    if (RTC.pc && RTC.pc.remoteDescription) RTC.pc.addIceCandidate(m.c).catch(() => {}); else RTC.pendingIce.push(m.c);
+  }
+}
+function rtcCloseAll() {
+  for (const p of RTC.peers.values()) { try { p.pc.close(); } catch (e) {} } RTC.peers.clear();
+  if (RTC.pc) { try { RTC.pc.close(); } catch (e) {} } Object.assign(RTC, { pc: null, u: null, r: null, open: false, pendingIce: [] });
+}
+/* envio: direto quando possível, MQTT como reserva */
+function sendDc(ch, s) { try { if (ch && ch.readyState === 'open' && ch.bufferedAmount < 256 * 1024) { ch.send(s); return true; } } catch (e) {} return false; }
+let outSeq = 0;
+function hostBroadcast(msg, reliable) {
+  const s = JSON.stringify(msg); let needMqtt = H.clients.size === 0 ? false : false;
+  for (const [nonce] of H.clients) { const p = RTC.peers.get(nonce); if (!(p && p.open && sendDc(reliable ? p.r : p.u, s))) needMqtt = true; }
+  if (needMqtt || msg.t === 'lobby') pub('c', msg);
+}
+function toHost(m, reliable) {
+  m.from = NET.nonce;
+  if (RTC.open && sendDc(reliable ? RTC.r : RTC.u, JSON.stringify(m))) return;
+  pub('h', m);
+}
+const netMode = () => NET.role === 'client' ? (RTC.open ? 'direta' : 'servidor') : NET.role === 'host' ? ([...H.clients.keys()].every((n) => (RTC.peers.get(n) || {}).open) ? 'direta' : 'servidor') : '';
 function netClose() {
   NET.closing = true;
   const c = NET.client; NET.client = null;
   if (c) { try { if (NET.role === 'host') c.publish(TOPIC('c'), JSON.stringify({ t: 'hostgone' })); else if (NET.role === 'client') c.publish(TOPIC('h'), JSON.stringify({ t: 'bye', from: NET.nonce })); } catch (e) {} setTimeout(() => { try { c.end(true); } catch (e) {} }, 150); }
-  NET.role = null; NET.welcomed = false;
+  rtcCloseAll(); NET.role = null; NET.welcomed = false;
 }
 
 /* anfitrião */
@@ -1432,6 +1655,7 @@ async function hostOpen(onStatus) {
   NET.client = c;
   wireClient(c, (m) => hostOnMessage(m));
   await new Promise((res, rej) => c.subscribe(TOPIC('h'), { qos: 0 }, (err) => err ? rej({ code: 'sub' }) : res()));
+  iceServers();
 }
 /* convidado */
 async function clientOpen(code, onStatus) {
@@ -1442,14 +1666,13 @@ async function clientOpen(code, onStatus) {
   wireClient(c, (m) => clientOnMessage(m));
   await new Promise((res, rej) => c.subscribe([TOPIC('c'), TOPIC('c/' + NET.nonce)], { qos: 0 }, (err) => err ? rej({ code: 'sub' }) : res()));
   onStatus && onStatus('Procurando a sala ' + code.toUpperCase() + '…');
-  // envia "olá" até o anfitrião responder
+  iceServers();
   for (let i = 0; i < 12 && !NET.welcomed && NET.role === 'client'; i++) {
-    pub('h', { t: 'hello', from: NET.nonce, n: (nick || 'Jogador').slice(0, 16), c: myClsPick });
+    pub('h', { t: 'hello', from: NET.nonce, n: (nick || 'Jogador').slice(0, 16), c: myClsPick, rtc: rtcOk() ? 1 : 0 });
     await new Promise((r) => setTimeout(r, 1000));
   }
   if (!NET.welcomed) throw { code: 'noroom' };
 }
-const toHost = (m) => { m.from = NET.nonce; pub('h', m); };
 /* =================== anfitrião: regras da partida =================== */
 const H = { started: false, bots: true, ents: new Map(), clients: new Map(), nextC: 1, phase: 'lobby', timer: 0, round: 0, rs: 0, score: [0, 0], att: 0, loss: [0, 0],
   bomb: { st: 'none', by: null, x: 0, z: 0, site: -1, pr: 0, dp: 0, defuser: null, planter: null }, evq: [], winner: -1, attSite: 0, lastSnap: 0, lastLobby: 0, botSeq: 0 };
@@ -1706,25 +1929,29 @@ function hostTick(dt) {
   hostBomb(dt); hostRevive(dt);
   for (const e of H.ents.values()) if (!e.human) botUpdate(e, dt);
   hostCheckWin();
-  if (NET.role === 'host') for (const [nonce, c] of H.clients) { const e = H.ents.get(c.id); if (e && now - e.last > 10 * TS) { H.clients.delete(nonce); hostRemove(c.id); } }
+  if (NET.role === 'host') for (const [nonce, c] of H.clients) { const e = H.ents.get(c.id); if (e && now - e.last > 10 * TS) { H.clients.delete(nonce); hostRtcDrop(nonce); hostRemove(c.id); } }
 }
 const r2 = (v) => Math.round(v * 100) / 100;
-function buildSnap() {
+function buildSnap(light) {
   const bm = H.bomb;
   return {
-    t: 'snap', ph: H.phase, tm: Math.round(Math.max(0, H.timer) * 10) / 10, rd: H.round, rs: H.rs, sc: H.score, at: H.att, wn: H.winner,
+    t: 'snap', ph: H.phase, tm: Math.round(Math.max(0, H.timer) * 10) / 10, rd: H.round, rs: H.rs, sc: H.score, at: H.att, wn: H.winner, lt: light ? 1 : 0,
     bm: { st: bm.st, by: bm.by, x: r2(bm.x), z: r2(bm.z), s: bm.site, pr: r2(bm.pr), dp: r2(bm.dp) },
-    ps: [...H.ents.values()].map((e) => ({ i: e.id, n: e.name, t: e.team, c: e.cls, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), cr: e.crouch > .5 ? 1 : 0, w: e.w, al: e.alive ? 1 : 0, hp: Math.max(0, Math.ceil(e.hp)),
-      k: e.k, d: e.d, b: e.hasBomb ? 1 : 0, sx: r2(e.sx), sz: r2(e.sz), sy: r2(e.syaw), hu: e.human ? 1 : 0, f: e.f, su: e.su, rl: e.rl, m: e.money,
-      iv: [e.inv.pri || '', e.inv.sec, Math.round(e.inv.armor), e.inv.helm ? 1 : 0, e.inv.kit ? 1 : 0, e.inv.he, e.inv.fl, e.inv.sm], rp: r2(e.revProg || 0), ru: e.revUsed ? 1 : 0, rv: e.revived ? 1 : 0 })),
+    ps: [...H.ents.values()].map((e) => {
+      const o = { i: e.id, t: e.team, x: r2(e.x), y: r2(e.y), z: r2(e.z), yw: r2(e.yaw), pt: r2(e.pitch), cr: e.crouch > .5 ? 1 : 0, w: e.w, al: e.alive ? 1 : 0, hp: Math.max(0, Math.ceil(e.hp)), b: e.hasBomb ? 1 : 0, f: e.f, su: e.su, rl: e.rl, rp: r2(e.revProg || 0), m: e.money, iv: [e.inv.pri || '', e.inv.sec, Math.round(e.inv.armor), e.inv.helm ? 1 : 0, e.inv.kit ? 1 : 0, e.inv.he, e.inv.fl, e.inv.sm] };
+      if (!light) Object.assign(o, { n: e.name, c: e.cls, k: e.k, d: e.d, sx: r2(e.sx), sz: r2(e.sz), sy: r2(e.syaw), hu: e.human ? 1 : 0, ru: e.revUsed ? 1 : 0, rv: e.revived ? 1 : 0 });
+      return o;
+    }),
   };
 }
+let evSeq = 0, snapSeq = 0;
 function hostFlush() {
   if (lobbyDirty && !$('room').hidden) renderRoom(lobbyMsg());
   if (NET.role !== 'host') { H.evq.length = 0; lobbyDirty = false; return; }
-  if (H.evq.length) { pub('c', { t: 'ev', l: H.evq }); H.evq = []; }
-  if (lobbyDirty || now - H.lastLobby > 1.5 * TS) { lobbyDirty = false; H.lastLobby = now; pub('c', lobbyMsg()); }
-  if (H.started && now - H.lastSnap >= .05 * TS) { H.lastSnap = now; pub('c', buildSnap()); }
+  if (H.evq.length) { hostBroadcast({ t: 'ev', q: ++evSeq, l: H.evq }, true); H.evq = []; }
+  if (lobbyDirty || now - H.lastLobby > 1.5 * TS) { lobbyDirty = false; H.lastLobby = now; hostBroadcast(lobbyMsg(), true); }
+  const direct = netMode() === 'direta', rate = direct ? 1 / 30 : 1 / 20;
+  if (H.started && now - H.lastSnap >= rate * TS) { H.lastSnap = now; snapSeq++; const full = snapSeq % 10 === 1; const sn = buildSnap(!full); sn.sq = snapSeq; hostBroadcast(sn, false); }
 }
 function hostOnMessage(m) {
   const from = typeof m.from === 'string' ? m.from.slice(0, 16) : null; if (!from) return;
@@ -1738,8 +1965,11 @@ function hostOnMessage(m) {
       if (!e) { pub('c/' + from, { t: 'full' }); return; }
       c = { id }; H.clients.set(from, c); hostEmit({ k: 'joined', n: e.name });
     }
-    pub('c/' + from, { t: 'welcome', id: c.id }); hostLobbyDirty(); return;
+    pub('c/' + from, { t: 'welcome', id: c.id }); hostLobbyDirty();
+    if (m.rtc) hostStartRtc(from);
+    return;
   }
+  if (m.t === 'rtc' || m.t === 'ice') { hostRtcSignal(from, m); return; }
   const c = H.clients.get(from); if (!c) return;
   const e = H.ents.get(c.id); if (e) e.last = now;
   switch (m.t) {
@@ -1747,7 +1977,7 @@ function hostOnMessage(m) {
     case 'ev': hostEvent(c.id, m.e); break;
     case 'pick': if (e) { const s = clamp(num(m.s) | 0, 0, 1), i = clamp(num(m.c) | 0, 0, 3); e.cls[s] = i; hostLobbyDirty(); } break;
     case 'team': if (e && !H.started && humansIn(1 - e.team) < TEAM_SIZE) { e.team = 1 - e.team; hostLobbyDirty(); } break;
-    case 'bye': H.clients.delete(from); hostRemove(c.id); break;
+    case 'bye': H.clients.delete(from); hostRtcDrop(from); hostRemove(c.id); break;
   }
 }
 
@@ -1888,12 +2118,17 @@ function equip(slot, force) {
   me.slot = slot; me.wid = id; me.reloadUntil = 0; me.reloadW = null; me.swapT = now + (WPN[id] && WPN[id].type === 'sniper' ? .6 : .4); me.recIdx = 0;
   if (WPN[id]) ensureAmmo(id); tone(380, .05, .06, 'square');
 }
+let lastSnapSq = 0;
+const HEAVY = ['n', 'c', 'k', 'd', 'sx', 'sz', 'sy', 'hu', 'ru', 'rv'];
 function applySnap(s) {
   if (!s || !Array.isArray(s.ps)) return;
+  if (s.sq) { if (s.sq <= lastSnapSq && lastSnapSq - s.sq < 1000) return; lastSnapSq = s.sq; }
+  const prev = S && S.map;
+  for (const p of s.ps) { const o = prev && prev.get(p.i); if (p.n === undefined) { for (const k of HEAVY) p[k] = o ? o[k] : (k === 'n' ? '…' : k === 'c' ? [0, 0] : 0); } p.at = now; }
   s.map = new Map(s.ps.map((p) => [p.i, p])); if (!s.bm) s.bm = { st: 'none' };
   S = s;
   const e = s.map.get(NET.myId);
-  if (e && s.rs !== lastRs) {
+  if (e && s.rs !== lastRs && e.sx !== undefined) {
     lastRs = s.rs;
     Object.assign(me, { x: e.sx, z: e.sz, y: 0, vx: 0, vz: 0, vy: 0, yaw: e.sy, pitch: 0, ammo: {}, reloadUntil: 0, reloadW: null, recIdx: 0, punchP: 0, punchY: 0, cd: 0, dashUntil: 0, blindUntil: 0, revealUntil: 0, f: 0, shieldUp: false });
     specId = null; me.slot = 0; equip(e.iv[0] ? 1 : 2, true);
@@ -1906,11 +2141,11 @@ function applySnap(s) {
     if (me.slot === 4 && !slotWeapon(4)) equip(e.iv[0] ? 1 : 2, true);
   }
 }
-function sendEv(ev) { if (isHost()) hostEvent(NET.myId, ev); else toHost({ t: 'ev', e: ev }); }
+function sendEv(ev) { if (isHost()) hostEvent(NET.myId, ev); else toHost({ t: 'ev', e: ev }, true); }
 function sendState() {
   const st = { rs: lastRs, x: r2(me.x), y: r2(me.y), z: r2(me.z), a: r2(me.yaw), p: r2(me.pitch), c: me.crouch > .5 ? 1 : 0, w: me.wid, f: me.f, su: me.shieldUp ? 1 : 0, r: now < me.reloadUntil ? 1 : 0 };
   if (isHost()) hostState(NET.myId, st);
-  else if (now - lastSend > .05 * TS) { lastSend = now; st.t = 'st'; toHost(st); }
+  else if (now - lastSend > (RTC.open ? 1 / 40 : 1 / 20) * TS) { lastSend = now; st.t = 'st'; toHost(st, false); }
 }
 
 /* efeitos de rede (todas as máquinas) */
@@ -2117,7 +2352,10 @@ function syncViews(dt) {
     const wasAlive = v.alive; v.alive = !!p.al; v.team = p.t; v.p = p; v.ally = ally;
     if ((!wasAlive && v.alive) || Math.hypot(p.x - v.x, p.z - v.z) > 5) { v.x = p.x; v.z = p.z; v.y = p.y; v.yaw = p.yw; v.s.fall = 0; }
     const px = v.x, pz = v.z;
-    v.x += (p.x - v.x) * k; v.z += (p.z - v.z) * k; v.y += (p.y - v.y) * k; v.yaw += angDiff(p.yw, v.yaw) * k; v.crouch += (p.cr - v.crouch) * k;
+    if (v.lastP !== p) { if (v.lastP && p.at > v.lastP.at) { const dtp = Math.max(.016, p.at - v.lastP.at); v.vx = (p.x - v.lastP.x) / dtp; v.vz = (p.z - v.lastP.z) / dtp; if (Math.hypot(v.vx, v.vz) > 9) v.vx = v.vz = 0; } v.lastP = p; }
+    const ahead = isHost() ? 0 : Math.min(.1, now - (p.at || now) + .03);
+    const tx = p.x + (v.vx || 0) * ahead, tz = p.z + (v.vz || 0) * ahead;
+    v.x += (tx - v.x) * k; v.z += (tz - v.z) * k; v.y += (p.y - v.y) * k; v.yaw += angDiff(p.yw, v.yaw) * k; v.crouch += (p.cr - v.crouch) * k;
     v.speed = Math.hypot(v.x - px, v.z - pz) / Math.max(dt, .001);
     const s = v.s; setSoldierGun(s, p.w || 'p9');
     s.root.visible = v.id !== specId; s.root.position.set(v.x, v.y, v.z); s.root.rotation.y = v.yaw;
@@ -2185,7 +2423,7 @@ function updateViewmodel(dt) {
     solveIK(A.S, A.T, .36, .35, A.pole, A.E);
     placeLimb(A.upper, A.S, A.E); placeLimb(A.fore, A.E, A.T);
     _v3.subVectors(A.T, A.E).normalize(); A.cuff.position.copy(A.T).addScaledVector(_v3, -.04); A.cuff.quaternion.copy(A.fore.quaternion); A.cuff.scale.set(1, .06, 1);
-    A.hand.position.copy(A.T); A.hand.quaternion.copy(A.fore.quaternion); A.hand.rotateX(-Math.PI / 2);
+    A.hand.position.copy(A.T).addScaledVector(_v3, -.055); A.hand.quaternion.copy(A.fore.quaternion);
   }
   // clarão do cano
   if (me.recoil > .8 && !W.quiet && !d.knife && !d.nade) { vmFlash.visible = true; _gl.set(0, d.muzzle[1], -d.muzzle[0] - .03).applyMatrix4(g.matrix); vmFlash.position.copy(_gl); vmFlash.material.rotation = Math.random() * 6; }
@@ -2262,7 +2500,7 @@ function updateHUD() {
   ui.vignette.style.opacity = Math.max(hu * .8, alive && hp < 30 ? .35 : 0);
   ui.flashOv.style.opacity = now < me.blindUntil ? clamp((me.blindUntil - now) / Math.max(.5, me.blindMax * .6), 0, 1) : 0;
   if (!alive) { const v = spectateTarget(); ui.spec.hidden = false; setText(ui.spec, 'sp', !e ? 'Você entra na próxima rodada' : v ? 'Assistindo ' + v.p.n + ' · Espaço troca' : 'Aguardando a próxima rodada'); } else ui.spec.hidden = true;
-  setText(ui.roomInfo, 'ri', NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.client && NET.client.connected ? 'online' : 'reconectando…'));
+  setText(ui.roomInfo, 'ri', NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via servidor') : 'reconectando…'));
   if (now - revealedT < 3.5 * TS) { if (cache.rv !== 1) { cache.rv = 1; banner('O inimigo invadiu as câmeras: você está visível', true); } } else cache.rv = 0;
   if (now > bannerUntil) ui.banner.hidden = true; if (now > bigUntil) ui.bigmsg.hidden = true;
   if (buyOpen) { if (!buyWindow() || !alive || !inBuyZone(side, me.x, me.z)) closeBuy(); else renderBuy(); }
@@ -2368,7 +2606,7 @@ function buildClassCards() {
 function pickClass(side, i) {
   myClsPick[side] = i; store.set('ldf_cls', JSON.stringify(myClsPick));
   if (isHost()) { const e = H.ents.get(NET.myId); if (e) { e.cls[side] = i; hostLobbyDirty(); } renderRoom(lobbyMsg()); }
-  else { toHost({ t: 'pick', s: side, c: i }); renderRoom(); }
+  else { toHost({ t: 'pick', s: side, c: i }, true); renderRoom(); }
 }
 function renderRoom(l) {
   if (l) L = l; if (!L) return;
@@ -2400,9 +2638,12 @@ function renderRoom(l) {
 const inviteURL = () => location.origin + location.pathname + '#sala-' + NET.code;
 function copyField(input, btn, label) { const v = input.value, done = () => { btn.textContent = 'Copiado'; setTimeout(() => btn.textContent = label, 1500); }; try { navigator.clipboard.writeText(v).then(done, () => input.select()); } catch (e) { input.select(); } }
 /* =================== mensagens do anfitrião (lado do convidado) =================== */
+let lastEvQ = 0;
 function clientOnMessage(m) {
   if (NET.role !== 'client') return;
   NET.lastHost = now;
+  if (m.t === 'rtc' || m.t === 'ice') { clientRtcSignal(m); return; }
+  if (m.t === 'ev' && m.q) { if (m.q <= lastEvQ) return; lastEvQ = m.q; }
   switch (m.t) {
     case 'welcome': if (!NET.welcomed) { NET.welcomed = true; NET.myId = String(m.id); } break;
     case 'full': setNet('Essa sala está cheia (10 pessoas).', true); NET.fullErr = true; break;
@@ -2449,7 +2690,7 @@ function backToRoom() {
 function leaveAll() {
   playing = false; firing = false; aiming = false; noLock = false;
   try { document.exitPointerLock(); } catch (e) {}
-  netClose(); hostReset();
+  netClose(); hostReset(); lastEvQ = 0; lastSnapSq = 0;
   for (const v of views.values()) disposeSoldier(v.s); views.clear();
   clearFx(); S = null; L = null; lastRs = -1; worldBomb.visible = false; bombLight.intensity = 0;
   $('hud').hidden = true; $('board').hidden = true; $('scope').hidden = true; show('home');
@@ -2562,7 +2803,7 @@ function frame() {
     wantsFov = 55;
   }
   if (isHost()) hostFlush();
-  if (NET.role === 'client' && NET.welcomed && now - lastPing > 2 * TS) { lastPing = now; toHost({ t: 'ping' }); }
+  if (NET.role === 'client' && NET.welcomed && now - lastPing > 2 * TS) { lastPing = now; toHost({ t: 'ping' }, true); }
   if (Math.abs(camera.fov - wantsFov) > .2) { camera.fov += (wantsFov - camera.fov) * Math.min(1, dt * 14); camera.updateProjectionMatrix(); }
   updateFx(dt);
   updateViewmodel(dt);
@@ -2617,7 +2858,7 @@ $('copyLink').addEventListener('click', () => copyField($('inviteLink'), $('copy
 $('pauseCopy').addEventListener('click', () => copyField($('pauseLink'), $('pauseCopy'), 'Copiar'));
 $('swapTeam').addEventListener('click', () => {
   if (isHost()) { const e = H.ents.get(NET.myId); if (e && !H.started && humansIn(1 - e.team) < TEAM_SIZE) { e.team = 1 - e.team; e.agent = freeAgent(e.team, e.agent); hostLobbyDirty(); renderRoom(lobbyMsg()); } }
-  else toHost({ t: 'team' });
+  else toHost({ t: 'team' }, true);
 });
 $('botsChk').addEventListener('change', () => { if (!isHost()) return; H.bots = $('botsChk').checked; hostLobbyDirty(); renderRoom(lobbyMsg()); });
 $('startBtn').addEventListener('click', () => {
