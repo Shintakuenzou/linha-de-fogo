@@ -212,6 +212,7 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
 .ab.ult .ultbar { height: 5px; background: rgba(255,255,255,.12); border-radius: 3px; margin-top: 4px; overflow: hidden; }
 .ab.ult .ultbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8a5cff, #ff6a2a); }
 .ab.ult.full { border-color: #ffd24a; box-shadow: 0 0 14px rgba(255,210,74,.55); }
+#errBox { position: fixed; left: 12px; bottom: 12px; z-index: 99; max-width: min(520px, 90vw); font: 12px/1.4 var(--mono); background: rgba(60,10,14,.92); color: #ffd7da; border: 1px solid #ff5260; border-radius: 8px; padding: 8px 10px; pointer-events: none; }
 #efChips { position: absolute; left: 50%; bottom: 96px; translate: -50% 0; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 70vw; }
 #efChips span { font: 600 12px var(--body); padding: 3px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }
 #efChips span.buff, #efChips span.team { border-color: #63d6a8; color: #9ff0c9; } #efChips span.curse { border-color: var(--foe); color: #ff9aa2; }
@@ -329,6 +330,7 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
     </div>
   </div>
   <div id="flashOv"></div>
+  <div id="errBox" hidden></div>
   <div id="blackout" hidden></div>
   <div id="cloakOv" hidden></div>
   <div id="scope" hidden></div>
@@ -461,6 +463,15 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
 (() => {
 'use strict';
 const $ = (id) => document.getElementById(id);
+/* um erro em uma parte não pode congelar o jogo inteiro: cada etapa roda isolada e o erro aparece na tela */
+const errSeen = new Set();
+function reportErr(where, e) {
+  const msg = where + ': ' + String((e && (e.message || e)) || 'erro').slice(0, 140);
+  if (errSeen.has(msg) || errSeen.size > 20) return; errSeen.add(msg);
+  try { console.error(where, e); const b = $('errBox'); if (b) { b.hidden = false; b.textContent = 'Erro (mande um print): ' + msg; clearTimeout(b._t); b._t = setTimeout(() => { b.hidden = true; }, 12000); } } catch (x) {}
+}
+function safe(where, fn) { try { return fn(); } catch (e) { reportErr(where, e); } }
+window.addEventListener('error', (e) => reportErr('js', e.error || e.message));
 const stage = $('stage'), canvas = $('gl');
 const INF = Infinity;
 const TS = window.__LDF_TS || 1;
@@ -683,9 +694,25 @@ const HAZE = 0xd9c4a0;
 scene.fog = new THREE.Fog(HAZE, 50, 220);
 const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(500, 24, 12), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: new THREE.Color(0x3f78b8) }, mid: { value: new THREE.Color(0xe6d2ad) }, bot: { value: new THREE.Color(0xb59a74) }, sun: { value: new THREE.Vector3(-.45, .5, -.35).normalize() } },
+    uniforms: { top: { value: new THREE.Color(0x3f78b8) }, mid: { value: new THREE.Color(0xe6d2ad) }, bot: { value: new THREE.Color(0xb59a74) }, sun: { value: new THREE.Vector3(-.45, .5, -.35).normalize() } , time: { value: 0 }, clouds: { value: .55 } },
     vertexShader: 'varying vec3 vp; void main(){ vp = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; uniform vec3 sun; varying vec3 vp; void main(){ float h = vp.y; vec3 c = h > 0.0 ? mix(mid, top, pow(clamp(h*1.4,0.0,1.0), .6)) : mix(mid, bot, clamp(-h*4.0,0.0,1.0)); float s = max(dot(vp, sun), 0.0); c += vec3(1.0,.85,.6) * (pow(s, 600.0) * 2.0 + pow(s, 12.0) * .18); gl_FragColor = vec4(c,1.0); }',
+    fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 bot; uniform vec3 sun; uniform float time; uniform float clouds; varying vec3 vp;
+      float hs(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hs(i), hs(i + vec2(1., 0.)), f.x), mix(hs(i + vec2(0., 1.)), hs(i + vec2(1., 1.)), f.x), f.y); }
+      float fbm(vec2 p){ float v = 0.0, a = .5; for (int i = 0; i < 5; i++) { v += a * vn(p); p = p * 2.03 + 17.1; a *= .5; } return v; }
+      void main(){
+        float h = vp.y; vec3 c = h > 0.0 ? mix(mid, top, pow(clamp(h*1.4,0.0,1.0), .6)) : mix(mid, bot, clamp(-h*4.0,0.0,1.0));
+        float s = max(dot(vp, sun), 0.0);
+        if (h > 0.0 && clouds > 0.0) {
+          vec2 uv = vp.xz / (h + .12) * 1.3 + vec2(time * .006, time * .002);
+          float n = fbm(uv), cov = smoothstep(1.0 - clouds, 1.0 - clouds + .3, n) * smoothstep(.0, .22, h);
+          float lit = .78 + .22 * fbm(uv + sun.xz * .35);
+          vec3 cc = mix(mid * .92, vec3(1.0, .98, .94), lit) + vec3(1.0, .8, .55) * pow(s, 8.0) * .35;
+          c = mix(c, cc, cov * .9);
+        }
+        c += vec3(1.0,.85,.6) * (pow(s, 600.0) * 2.0 + pow(s, 12.0) * .18);
+        gl_FragColor = vec4(c,1.0);
+      }`,
   }));
 skyMesh.position.set(MW / 2, 0, MD / 2); skyMesh.renderOrder = -1; scene.add(skyMesh);
 const hemi = new THREE.HemisphereLight(0xbcd4ff, 0x8a6b48, 1.0); scene.add(hemi);
@@ -878,6 +905,9 @@ const matFall2 = matFall.clone(); matFall2.map = fallTex.clone(); matFall2.map.n
 const matTrimDark = M({ color: 0x4b4438, roughness: .9 });
 const matStreet = M({ map: texStreet, roughness: .95 });
 const matSiteFloor = M({ map: texTiles, roughness: .85, polygonOffset: true, polygonOffsetFactor: -1 });
+for (const [m, t, s] of [[matPlaster, texPlaster, 1.5], [matCrate, texCrate, 2], [matSandbag, texSandbag, 2.5], [matStreet, texStreet, 1.4], [matSiteFloor, texTiles, 1.6]]) { if (!t) continue; try { m.normalMap = normalFrom(t, s); m.normalScale.set(.8, .8); m.needsUpdate = true; } catch (e) {} }
+for (const m of matFacade) { try { m.normalMap = normalFrom(m.map, 1.6); m.normalScale.set(.7, .7); m.needsUpdate = true; } catch (e) {} }
+for (const m of matContainer) { try { m.normalMap = normalFrom(m.map, 2.5); m.needsUpdate = true; } catch (e) {} }
 
 let worldGroup = null;
 const worldBuckets = new Map();
@@ -889,7 +919,7 @@ function flushWorld(noCast) {
 function sideFacesW(b, mats, tw, th, topMat) {
   const w = b.x1 - b.x0, d = b.z1 - b.z0, h = b.y1, cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
   const faces = [[w, cx, b.z1, 0], [w, cx, b.z0, Math.PI], [d, b.x1, cz, Math.PI / 2], [d, b.x0, cz, -Math.PI / 2]];
-  faces.forEach(([len, x, z, ry], i) => { const p = plane(len, h, len / tw, h / th); p.rotateY(ry); p.translate(x, h / 2, z); addW(Array.isArray(mats) ? mats[(i + Math.round(b.x0 + b.z0)) % mats.length] : mats, p); });
+  faces.forEach(([len, x, z, ry], i) => { const p = plane(len, h, len / tw, h / th); p.rotateY(ry); p.translate(x, h / 2, z); addW(Array.isArray(mats) ? mats[(((i + Math.round(b.x0 + b.z0)) % mats.length) + mats.length) % mats.length] : mats, p); });
   const top = plane(w, d, w / 4, d / 4); top.rotateX(-Math.PI / 2); top.translate(cx, h, cz); addW(topMat || matRoof, top);
 }
 /* rocha natural: caixa subdividida e deformada por ruído (a colisão continua a caixa) */
@@ -1016,6 +1046,16 @@ function buildWorld() {
     for (let i = 0; i < 60; i++) { const x = rnd(1, MW - 1), z = rnd(1, MD - 1); if (!boxes.some((b) => x > b.x0 - .8 && x < b.x1 + .8 && z > b.z0 - .8 && z < b.z1 + .8) && !inWater(x, z) && siteAt(x, z) < 0) fernAt(x, z); }
     noCast.add(matFern);
   }
+  // sombra de contato no chão em volta de tudo que está apoiado nele + escurecimento na base das paredes
+  const aoList = [];
+  for (let i = 0; i < STATIC_BOXES; i++) {
+    const b = boxes[i], cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+    if (b.t === 'tr' || b.t === 'lg') continue;
+    const big = b.y1 >= 2.5, m = b.t === 'b' ? .35 : big ? .95 : .55, a = b.t === 'r' ? .35 : big ? .6 : .5;
+    aoList.push([b.x0, b.z0, b.x1, b.z1, m, a, groundY(cx, cz) + .02]);
+  }
+  if (aoList.length) worldGroup.add(contactShadows(aoList));
+  for (const k of worldBuckets.keys()) for (const m of [].concat(k)) if (m && !m.transparent && m !== matWater) heightAO(m);
   flushWorld(noCast);
   for (const s of SITES) floorDecal(s.name, s.cx, s.cz, 4.2);
   // som contínuo da cachoeira
@@ -1951,6 +1991,108 @@ function clearFx() {
   if (typeof clearMagic === 'function') clearMagic();
   holes.forEach((h) => h.visible = false);
 }
+/* =================== pós-processamento estilo CS =================== */
+/* Qualidade alta: a cena é desenhada numa imagem com antisserrilhado 4× (MSAA), depois passa por
+   um único filtro final com brilho (bloom) nas luzes fortes, nitidez, correção de cor e vinheta.
+   O brilho é calculado em 1/4 da resolução, então custa pouco.
+   Resolução dinâmica: se o FPS cair, a resolução interna baixa sozinha para o jogo continuar fluido. */
+const POST = { ok: false, scale: 1, frames: 0, acc: 0 };
+(function postInit() {
+  try {
+    if (!renderer.capabilities || !renderer.capabilities.isWebGL2) return;
+    const samples = Math.min(4, renderer.capabilities.maxSamples || 0);
+    const main = new THREE.WebGLRenderTarget(4, 4, { samples, depthBuffer: true });
+    // truque: com esta marca o three aplica o mesmo tom (ACES) e a mesma cor de tela que usaria direto no monitor
+    main.texture.colorSpace = THREE.SRGBColorSpace; main.texture.internalFormat = 'RGBA8'; main.isXRRenderTarget = true;
+    const a = new THREE.WebGLRenderTarget(4, 4, { depthBuffer: false }), b = new THREE.WebGLRenderTarget(4, 4, { depthBuffer: false });
+    const vs = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+    const mat = (fs, uniforms) => new THREE.ShaderMaterial({ vertexShader: vs, fragmentShader: fs, uniforms, depthTest: false, depthWrite: false, toneMapped: false });
+    const bright = mat(`uniform sampler2D tS; uniform vec2 px; uniform float th; varying vec2 vUv;
+      void main(){ vec3 c = (texture2D(tS, vUv + px*vec2(-1.,-1.)).rgb + texture2D(tS, vUv + px*vec2(1.,-1.)).rgb + texture2D(tS, vUv + px*vec2(-1.,1.)).rgb + texture2D(tS, vUv + px*vec2(1.,1.)).rgb) * .25;
+        float l = max(c.r, max(c.g, c.b)); gl_FragColor = vec4(c * smoothstep(th, 1.0, l), 1.0); }`,
+      { tS: { value: main.texture }, px: { value: new THREE.Vector2() }, th: { value: .84 } });
+    const blur = mat(`uniform sampler2D tS; uniform vec2 d; varying vec2 vUv;
+      void main(){ vec3 c = texture2D(tS, vUv).rgb * .2270 + (texture2D(tS, vUv + d * 1.3846).rgb + texture2D(tS, vUv - d * 1.3846).rgb) * .3162 + (texture2D(tS, vUv + d * 3.2308).rgb + texture2D(tS, vUv - d * 3.2308).rgb) * .0703; gl_FragColor = vec4(c, 1.0); }`,
+      { tS: { value: null }, d: { value: new THREE.Vector2() } });
+    const final = mat(`uniform sampler2D tS; uniform sampler2D tB; uniform vec2 px; uniform float bloom; uniform float sharp; uniform float vig; uniform float warm; varying vec2 vUv;
+      void main(){
+        vec3 c = texture2D(tS, vUv).rgb;
+        vec3 n = texture2D(tS, vUv + vec2(0., px.y)).rgb + texture2D(tS, vUv - vec2(0., px.y)).rgb + texture2D(tS, vUv + vec2(px.x, 0.)).rgb + texture2D(tS, vUv - vec2(px.x, 0.)).rgb;
+        c = clamp(c + (c * 4.0 - n) * sharp, 0.0, 1.0);                  // nitidez
+        vec3 bl = texture2D(tB, vUv).rgb * bloom; c = 1.0 - (1.0 - c) * (1.0 - bl); // brilho nas luzes
+        float l = dot(c, vec3(.2126, .7152, .0722));
+        c = mix(vec3(l), c, 1.1);                                        // saturação
+        c = (c - .42) * 1.07 + .42;                                        // contraste
+        c *= mix(vec3(.97, .995, 1.045), vec3(1.0 + .04 * warm, 1.0, 1.0 - .05 * warm), smoothstep(.1, .85, l)); // sombras frias, luz quente
+        vec2 q = vUv - .5; c *= 1.0 - vig * dot(q, q) * 1.7;            // vinheta
+        gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+      }`, { tS: { value: main.texture }, tB: { value: a.texture }, px: { value: new THREE.Vector2() }, bloom: { value: .55 }, sharp: { value: .12 }, vig: { value: .26 }, warm: { value: 1 } });
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), final); quad.frustumCulled = false;
+    const sc = new THREE.Scene(); sc.add(quad);
+    Object.assign(POST, { main, a, b, bright, blur, final, quad, sc, cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), size: new THREE.Vector2(), ok: true });
+  } catch (e) { POST.ok = false; }
+})();
+function postResize() {
+  if (!POST.ok) return;
+  renderer.getDrawingBufferSize(POST.size); const w = Math.max(4, POST.size.x | 0), h = Math.max(4, POST.size.y | 0);
+  POST.main.setSize(w, h); const qw = Math.max(2, w >> 2), qh = Math.max(2, h >> 2); POST.a.setSize(qw, qh); POST.b.setSize(qw, qh);
+  POST.bright.uniforms.px.value.set(1 / w, 1 / h); POST.final.uniforms.px.value.set(1 / w, 1 / h); POST.qpx = [1 / qw, 1 / qh];
+}
+function postPass(m, target) { POST.quad.material = m; renderer.setRenderTarget(target); renderer.render(POST.sc, POST.cam); }
+function renderFrame(showVm) {
+  if (POST.pending) { POST.pending = false; resize(); }
+  if (POST.ok && quality === 'alta') {
+    try {
+      renderer.setRenderTarget(POST.main); renderer.clear(); renderer.render(scene, camera);
+      if (showVm) { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
+      postPass(POST.bright, POST.a);
+      const [qx, qy] = POST.qpx, bl = POST.blur;
+      for (const s of [1, 2.2]) {
+        bl.uniforms.tS.value = POST.a.texture; bl.uniforms.d.value.set(qx * s, 0); postPass(bl, POST.b);
+        bl.uniforms.tS.value = POST.b.texture; bl.uniforms.d.value.set(0, qy * s); postPass(bl, POST.a);
+      }
+      postPass(POST.final, null);
+      return;
+    } catch (e) { POST.ok = false; renderer.setRenderTarget(null); reportErr('gráficos', e); }
+  }
+  renderer.setRenderTarget(null); renderer.clear(); renderer.render(scene, camera);
+  if (showVm) { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
+}
+// resolução dinâmica: mede o FPS a cada 1,5 s e ajusta a resolução interna (55% a 100%)
+function postAdapt(rawDt) {
+  if (document.hidden || rawDt > .5) return;
+  POST.frames++; POST.acc += rawDt; if (POST.acc < 1.5) return;
+  const fps = POST.frames / POST.acc; POST.frames = 0; POST.acc = 0;
+  let s = POST.scale;
+  if (fps < 45) s = Math.max(.55, s - (fps < 30 ? .15 : .08));
+  else if (fps > 57 && s < 1) s = Math.min(1, s + .05);
+  if (Math.abs(s - POST.scale) > .001) { POST.scale = s; POST.pending = true; } // aplica no começo do próximo quadro (sem piscar preto)
+}
+// sombra de contato na base de paredes e objetos (o "AO" que dá peso às coisas, como nos mapas do CS)
+function heightAO(m) {
+  if (!m || m.userData.hao) return; m.userData.hao = true;
+  m.onBeforeCompile = (sh) => {
+    // só nas faces de pé (paredes, laterais de caixas): escurece perto do chão
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vAoY; varying float vAoN;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvAoY = (modelMatrix * vec4(transformed, 1.0)).y; vAoN = abs(normalize(mat3(modelMatrix) * objectNormal).y);');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vAoY; varying float vAoN;').replace('#include <opaque_fragment>', 'outgoingLight *= mix(1.0, mix(0.55, 1.0, smoothstep(-0.05, 1.2, vAoY)), 1.0 - smoothstep(0.55, 0.9, vAoN));\n#include <opaque_fragment>');
+  };
+  m.customProgramCacheKey = () => 'hao1';
+  m.needsUpdate = true;
+}
+const aoGroundMat = new THREE.MeshBasicMaterial({ color: 0x000000, vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+function contactShadows(list) {
+  const pos = [], col = [], idx = [];
+  for (const [x0, z0, x1, z1, m, a, y] of list) {
+    const base = pos.length / 3, rings = [[0, a], [m * .35, a * .42], [m, 0]];
+    for (const [e, al] of rings) for (const [x, z] of [[x0 - e, z0 - e], [x1 + e, z0 - e], [x1 + e, z1 + e], [x0 - e, z1 + e]]) { pos.push(x, y, z); col.push(1, 1, 1, al); }
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) {
+      const i0 = base + r * 4 + k, i1 = base + r * 4 + (k + 1) % 4, o0 = i0 + 4, o1 = i1 + 4;
+      idx.push(i0, o0, i1, i1, o0, o1);
+    }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 4)); g.setIndex(idx);
+  const mesh = new THREE.Mesh(g, aoGroundMat); mesh.renderOrder = 1; return mesh;
+}
 /* =================== rede =================== */
 /* 1) servidores MQTT públicos (WSS): encontram a sala e servem de reserva
    2) WebRTC: conexão direta entre os navegadores, combinada pelo MQTT (bem menos atraso) */
@@ -2009,14 +2151,16 @@ async function hostStartRtc(nonce, tries = 0) {
     const pc = p.pc = new RTCPeerConnection({ iceServers: await iceServers() });
     p.u = pc.createDataChannel('u', { ordered: false, maxRetransmits: 0 });
     p.r = pc.createDataChannel('r', { ordered: true });
-    const upd = () => { p.open = p.u.readyState === 'open' && p.r.readyState === 'open'; };
-    for (const ch of [p.u, p.r]) { ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { const m = parseMsg(ev.data); if (m) { m.from = nonce; hostOnMessage(m); } }; }
+    const upd = () => { p.open = p.u.readyState === 'open' && p.r.readyState === 'open' && pc.connectionState !== 'disconnected' && pc.connectionState !== 'failed'; if (p.open && !p.lastRx) p.lastRx = performance.now(); };
+    p.upd = upd;
+    for (const ch of [p.u, p.r]) { ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { p.lastRx = performance.now(); const m = parseMsg(ev.data); if (m) { m.from = nonce; hostOnMessage(m); } }; }
     pc.onicecandidate = (e) => { if (e.candidate) pub('c/' + nonce, { t: 'ice', c: e.candidate.toJSON() }); };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'failed') {
         p.open = false; const tries = (p.tries || 0) + 1;
         if (tries <= 4 && H.clients.has(nonce)) setTimeout(() => { if (RTC.peers.get(nonce) === p && H.clients.has(nonce)) { hostRtcDrop(nonce); hostStartRtc(nonce, tries); } }, 1500 * tries);
       } else if (pc.connectionState === 'closed') p.open = false;
+      else upd(); // 'disconnected' pausa o canal direto (vai pelo servidor) e 'connected' volta
     };
     await pc.setLocalDescription(await pc.createOffer());
     pub('c/' + nonce, { t: 'rtc', sdp: pc.localDescription.toJSON() });
@@ -2037,11 +2181,12 @@ async function clientRtcSignal(m) {
       const pc = RTC.pc = new RTCPeerConnection({ iceServers: await iceServers() }); RTC.open = false;
       pc.ondatachannel = (e) => {
         const ch = e.channel; RTC[ch.label] = ch;
-        const upd = () => { RTC.open = !!(RTC.u && RTC.r && RTC.u.readyState === 'open' && RTC.r.readyState === 'open'); };
-        ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { const x = parseMsg(ev.data); if (x) clientOnMessage(x); };
+        const upd = () => { RTC.open = !!(RTC.u && RTC.r && RTC.u.readyState === 'open' && RTC.r.readyState === 'open') && pc.connectionState !== 'disconnected' && pc.connectionState !== 'failed'; if (RTC.open && !RTC.lastRx) RTC.lastRx = performance.now(); };
+        RTC.upd = upd;
+        ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { RTC.lastRx = performance.now(); const x = parseMsg(ev.data); if (x) clientOnMessage(x); };
       };
       pc.onicecandidate = (e) => { if (e.candidate) pub('h', { t: 'ice', from: NET.nonce, c: e.candidate.toJSON() }); };
-      pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') RTC.open = false; };
+      pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') RTC.open = false; else if (RTC.upd) RTC.upd(); };
       await pc.setRemoteDescription(m.sdp);
       await pc.setLocalDescription(await pc.createAnswer());
       pub('h', { t: 'rtc', from: NET.nonce, sdp: pc.localDescription.toJSON() });
@@ -2053,22 +2198,36 @@ async function clientRtcSignal(m) {
 }
 function rtcCloseAll() {
   for (const p of RTC.peers.values()) { try { p.pc.close(); } catch (e) {} } RTC.peers.clear();
-  if (RTC.pc) { try { RTC.pc.close(); } catch (e) {} } Object.assign(RTC, { pc: null, u: null, r: null, open: false, pendingIce: [] });
+  if (RTC.pc) { try { RTC.pc.close(); } catch (e) {} } Object.assign(RTC, { pc: null, u: null, r: null, open: false, pendingIce: [], lastRx: 0, upd: null });
 }
 /* envio: direto quando possível, MQTT como reserva */
-function sendDc(ch, s) { try { if (ch && ch.readyState === 'open' && ch.bufferedAmount < 256 * 1024) { ch.send(s); return true; } } catch (e) {} return false; }
+/* canal sem garantia (posições): se a internet engasgar, joga fora o pacote velho em vez de formar fila
+   — uma fila de pacotes atrasados é exatamente o "lag que vai aumentando" */
+function sendDc(ch, s) {
+  try {
+    if (!ch || ch.readyState !== 'open') return false;
+    if (ch.label === 'u' && ch.bufferedAmount > 24 * 1024) return true; // descarta: o próximo pacote já traz o estado novo
+    if (ch.bufferedAmount > 256 * 1024) return false;
+    ch.send(s); return true;
+  } catch (e) { return false; }
+}
+// o canal direto só conta como saudável se recebeu algo no último 1,2 s (há ping a cada 0,5 s)
+const peerOk = (p) => !!(p && p.open && performance.now() - (p.lastRx || 0) < 1200);
+const clientRtcOk = () => RTC.open && performance.now() - (RTC.lastRx || 0) < 1200;
 let outSeq = 0;
 function hostBroadcast(msg, reliable) {
   const s = JSON.stringify(msg); let needMqtt = H.clients.size === 0 ? false : false;
-  for (const [nonce] of H.clients) { const p = RTC.peers.get(nonce); if (!(p && p.open && sendDc(reliable ? p.r : p.u, s))) needMqtt = true; }
+  for (const [nonce] of H.clients) { const p = RTC.peers.get(nonce); if (!(peerOk(p) && sendDc(reliable ? p.r : p.u, s))) { needMqtt = true; if (p && p.open) sendDc(reliable ? p.r : p.u, s); } }
   if (needMqtt || msg.t === 'lobby') pub('c', msg);
 }
 function toHost(m, reliable) {
   m.from = NET.nonce;
-  if (RTC.open && sendDc(reliable ? RTC.r : RTC.u, JSON.stringify(m))) return;
+  const s = JSON.stringify(m);
+  if (clientRtcOk() && sendDc(reliable ? RTC.r : RTC.u, s)) return;
+  if (RTC.open) sendDc(reliable ? RTC.r : RTC.u, s); // canal direto em dúvida: manda pelos dois caminhos
   pub('h', m);
 }
-const netMode = () => NET.role === 'client' ? (RTC.open ? 'direta' : 'servidor') : NET.role === 'host' ? ([...H.clients.keys()].every((n) => (RTC.peers.get(n) || {}).open) ? 'direta' : 'servidor') : '';
+const netMode = () => NET.role === 'client' ? (clientRtcOk() ? 'direta' : 'servidor') : NET.role === 'host' ? ([...H.clients.keys()].every((n) => peerOk(RTC.peers.get(n))) ? 'direta' : 'servidor') : '';
 function netClose() {
   NET.closing = true;
   const c = NET.client; NET.client = null;
@@ -2145,7 +2304,8 @@ function unpackSnap(m) {
 const PING = { ms: 0, sent: 0 };
 function hostSendTo(nonce, msg) {
   const p = RTC.peers.get(nonce), s = JSON.stringify(msg);
-  if (p && p.open && sendDc(p.u, s)) return;
+  if (peerOk(p) && sendDc(p.u, s)) return;
+  if (p && p.open) sendDc(p.u, s);
   pub('c/' + nonce, msg);
 }
 function onPong(m) { const rtt = (performance.now() - (+m.c || 0)); if (rtt >= 0 && rtt < 5000) PING.ms = PING.ms ? PING.ms * .7 + rtt * .3 : rtt; }
@@ -2473,6 +2633,7 @@ function hostRevive(dt) {
 function hostTick(dt) {
   if (!H.started) return;
   H.timer -= dt;
+  safe('rodada', () => {
   if (H.phase === 'pre' && H.timer <= 0) { H.phase = 'live'; H.timer = T_LIVE; hostApplyCards(); hostEmit({ k: 'go' }); }
   else if (H.phase === 'live' && H.timer <= 0) endRound(1 - H.att, 'Tempo esgotado');
   else if (H.phase === 'planted' && H.timer <= 0) {
@@ -2482,9 +2643,10 @@ function hostTick(dt) {
   } else if (H.phase === 'end' && H.timer <= 0) {
     if (H.winner >= 0) { H.phase = 'over'; hostEmit({ k: 'over', w: H.winner }); } else startRound();
   }
-  hostBomb(dt); hostRevive(dt); hostMagicTick(dt);
-  for (const e of H.ents.values()) if (!e.human) botUpdate(e, dt);
-  hostCheckWin();
+  });
+  safe('bomba', () => hostBomb(dt)); safe('reviver', () => hostRevive(dt)); safe('magia', () => hostMagicTick(dt));
+  for (const e of H.ents.values()) if (!e.human) safe('bot', () => botUpdate(e, dt));
+  safe('vitória', hostCheckWin);
   if (NET.role === 'host') for (const [nonce, c] of H.clients) { const e = H.ents.get(c.id); if (e && now - e.last > 10 * TS) { H.clients.delete(nonce); hostRtcDrop(nonce); hostRemove(c.id); } }
 }
 const r2 = (v) => Math.round(v * 100) / 100;
@@ -3401,7 +3563,7 @@ function updateHUD() {
   ui.vignette.style.opacity = Math.max(hu * .8, alive && hp < 30 ? .35 : 0);
   ui.flashOv.style.opacity = now < me.blindUntil ? clamp((me.blindUntil - now) / Math.max(.5, me.blindMax * .6), 0, 1) : 0;
   if (!alive) { const v = spectateTarget(); ui.spec.hidden = false; setText(ui.spec, 'sp', !e ? 'Você entra na próxima rodada' : v ? 'Assistindo ' + v.p.n + ' · Espaço troca' + (v.p.hu ? '' : ' · T assume este bot') : 'Aguardando a próxima rodada'); } else ui.spec.hidden = true;
-  setText(ui.roomInfo, 'ri', MAPS[MAP_ID].name + ' · ' + (NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via servidor') + (NET.role === 'client' && PING.ms ? ' · ' + Math.round(PING.ms) + ' ms' : '') : 'reconectando…')));
+  setText(ui.roomInfo, 'ri', MAPS[MAP_ID].name + ' · ' + (NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.role === 'client' && playing && NET.lastSnapAt && performance.now() - NET.lastSnapAt > 1000 ? 'conexão instável, recuperando…' : NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via servidor') + (NET.role === 'client' && PING.ms ? ' · ' + Math.round(PING.ms) + ' ms' : '') : 'reconectando…')));
   if (now - revealedT < 3.5 * TS) { if (cache.rv !== 1) { cache.rv = 1; banner('O inimigo invadiu as câmeras: você está visível', true); } } else cache.rv = 0;
   if (now > bannerUntil) ui.banner.hidden = true; if (now > bigUntil) ui.bigmsg.hidden = true;
   if (buyOpen) { if (!buyWindow() || !alive || !inBuyZone(side, me.x, me.z)) closeBuy(); else renderBuy(); }
@@ -3574,9 +3736,9 @@ function clientOnMessage(m) {
     case 'full': setNet('Essa sala está cheia (10 pessoas).', true); NET.fullErr = true; break;
     case 'lobby': if (NET.welcomed) onLobby(m); break;
     case 'snap': if (NET.welcomed) applySnap(m); break;
-    case 's': if (NET.welcomed) { const s = unpackSnap(m); if (s) applySnap(s); } break;
+    case 's': if (NET.welcomed) safe('estado', () => { const s = unpackSnap(m); if (s) { applySnap(s); NET.lastSnapAt = performance.now(); } }); break;
     case 'po': onPong(m); break;
-    case 'ev': if (NET.welcomed && Array.isArray(m.l)) m.l.forEach(applyFx); break;
+    case 'ev': if (NET.welcomed && Array.isArray(m.l)) m.l.forEach((x) => safe('evento', () => applyFx(x))); break;
     case 'hostgone': hostGone(); break;
   }
 }
@@ -3618,7 +3780,7 @@ function backToRoom() {
 function leaveAll() {
   playing = false; firing = false; aiming = false; noLock = false;
   try { document.exitPointerLock(); } catch (e) {}
-  netClose(); hostReset(); lastEvQ = 0; lastSnapSq = 0; interpReset(); PING.ms = 0;
+  netClose(); hostReset(); lastEvQ = 0; lastSnapSq = 0; interpReset(); PING.ms = 0; NET.lastSnapAt = 0;
   for (const v of views.values()) disposeSoldier(v.s); views.clear();
   clearFx(); S = null; L = null; lastRs = -1; worldBomb.visible = false; bombLight.intensity = 0;
   $('hud').hidden = true; $('board').hidden = true; $('scope').hidden = true; show('home');
@@ -3688,8 +3850,8 @@ canvas.addEventListener('wheel', (e) => { if (!playing) return; const order = [1
 /* =================== laço principal =================== */
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'alta' ? 1.5 : .85));
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); vmCam.aspect = w / h; vmCam.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'alta' ? 1.25 : .85) * POST.scale);
+  renderer.setSize(w, h, false); postResize(); camera.aspect = w / h; camera.updateProjectionMatrix(); vmCam.aspect = w / h; vmCam.updateProjectionMatrix();
 }
 function applyQuality() {
   renderer.shadowMap.enabled = quality === 'alta'; sun.castShadow = quality === 'alta';
@@ -3701,19 +3863,22 @@ let last = performance.now() / 1000 * TS, orbit = 0, wantsFov = 75, lastHostT = 
 // simulação do anfitrião separada do desenho: roda no quadro normal e, se a aba sair de foco
 // ou o FPS cair, um relógio em segundo plano continua mandando o jogo para os amigos
 function hostStep(t) {
-  const dt = Math.min(.05 * TS, t - lastHostT); if (dt <= 0) return; lastHostT = t; now = t;
-  hostTick(dt);
-  if (playing) applySnap(buildSnap(++hostFrames % 15 !== 1));
-  hostFlush(); lastHostStep = performance.now();
+  // o relógio da partida segue o tempo real mesmo com FPS baixo: divide o intervalo em passos de até 0,05 s
+  let left = Math.min(.3 * TS, t - lastHostT); if (left <= 0) return; lastHostT = t;
+  const t0 = t - left;
+  while (left > 1e-4) { const dt = Math.min(.05 * TS, left); left -= dt; now = t - left; safe('servidor', () => hostTick(dt)); }
+  now = t; void t0;
+  if (playing) safe('estado', () => applySnap(buildSnap(++hostFrames % 15 !== 1)));
+  safe('rede', hostFlush); lastHostStep = performance.now();
 }
 startBgTicker(() => hostStep(performance.now() / 1000 * TS));
 function frame() {
   requestAnimationFrame(frame);
   const t = performance.now() / 1000 * TS; let dt = t - last; last = t; now = t; if (dt > .05 * TS) dt = .05 * TS; if (dt > .2) dt = .2;
   if (playing) {
-    updateMe(dt);
+    safe('movimento', () => updateMe(dt));
     if (isHost()) hostStep(t);
-    syncViews(dt);
+    safe('jogadores', () => syncViews(dt));
     // câmera: própria visão ou assistindo um aliado
     const alive = myAlive();
     if (alive) { camera.position.set(me.x, me.y + me.eye, me.z); camera.rotation.set(me.pitch + me.punchP * .5, me.yaw - me.punchY * .5, 0); }
@@ -3735,7 +3900,7 @@ function frame() {
         if (now - lastBeep > 1 / rate) { lastBeep = now; sBeep(.08 + distVol(bm.x, bm.z) * .12); }
       } else { worldBomb.userData.led.material.emissiveIntensity = .3; bombLight.intensity = 0; }
     } else { worldBomb.visible = false; bombLight.intensity = 0; }
-    updateHUD(); drawMinimap();
+    safe('hud', updateHUD); safe('mapa', drawMinimap);
     if (!isHost() && NET.role === 'client' && NET.lastHost && now - NET.lastHost > 8 * TS) hostGone();
   } else {
     if (isHost()) hostStep(t);
@@ -3743,16 +3908,16 @@ function frame() {
     camera.position.set(MW / 2 + Math.cos(orbit) * 46, 22, MD / 2 + Math.sin(orbit) * 34); camera.lookAt(MW / 2, 0, MD / 2);
     wantsFov = 55;
   }
-  if (NET.role === 'client' && NET.welcomed && now - lastPing > 1 * TS) { lastPing = now; toHost({ t: 'ping', c: performance.now() }, false); }
+  if (NET.role === 'client' && NET.welcomed && now - lastPing > .5 * TS) { lastPing = now; toHost({ t: 'ping', c: performance.now() }, false); }
   wantsFov += me.fovKick || 0;
   if (Math.abs(camera.fov - wantsFov) > .2) { camera.fov += (wantsFov - camera.fov) * Math.min(1, dt * 14); camera.updateProjectionMatrix(); }
-  updateFx(dt); updateWorld(dt); updateMagic(dt);
-  { const T = THEMES[MAPS[MAP_ID].theme]; if (playing && myEf('fog')) { scene.fog.near = 2; scene.fog.far = 16; } else { scene.fog.near = T.fog[1]; scene.fog.far = T.fog[2]; } } xrayMat.uniforms.time.value = now;
+  safe('efeitos', () => updateFx(dt)); safe('mundo', () => updateWorld(dt)); safe('magia', () => updateMagic(dt));
+  { const T = THEMES[MAPS[MAP_ID].theme]; if (playing && myEf('fog')) { scene.fog.near = 2; scene.fog.far = 16; } else { scene.fog.near = T.fog[1]; scene.fog.far = T.fog[2]; } } xrayMat.uniforms.time.value = now; skyMesh.material.uniforms.time.value = now;
   me.fovKick = Math.max(0, (me.fovKick || 0) - dt * 30);
-  updateViewmodel(dt);
+  safe('arma', () => updateViewmodel(dt));
   const showVm = playing && myAlive() && !scoped();
-  renderer.clear(); renderer.render(scene, camera);
-  if (showVm) { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
+  renderFrame(showVm);
+  postAdapt((performance.now() - (POST.lastT || performance.now())) / 1000); POST.lastT = performance.now();
 }
 
 /* =================== botões =================== */
@@ -3823,7 +3988,7 @@ buildClassCards(); buildMapCards(); buildElementPicker();
 $('modeClassic').addEventListener('click', () => setMode('classic')); $('modeCards').addEventListener('click', () => setMode('cards'));
 requestAnimationFrame(frame);
 if (!window.mqtt) setNet('O modo online não carregou. Você ainda pode treinar com bots.', true);
-window.__ldf = { H, NET, me, get S() { return S; }, views, boxes, findPath, SITES, SPAWNS, navOpen, sendEv, equip, openBuy, WPN, CARDS, pickCard, castSpell, castUlt, loadMap, MAPS, groundY, vmArms, get vmGun() { return vmGun; }, makeGun, makeSoldier, setSoldierGun, poseSoldier };
+window.__ldf = { scene, camera, renderer, POST, get quality() { return quality; }, setQuality, H, NET, me, get S() { return S; }, views, boxes, findPath, SITES, SPAWNS, navOpen, sendEv, equip, openBuy, WPN, CARDS, pickCard, castSpell, castUlt, loadMap, MAPS, groundY, vmArms, get vmGun() { return vmGun; }, makeGun, makeSoldier, setSoldierGun, poseSoldier };
 })();
 </script>
 </body>
