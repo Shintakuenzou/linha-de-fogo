@@ -2002,9 +2002,9 @@ async function iceServers() {
 const rtcOk = () => typeof window.RTCPeerConnection === 'function';
 const parseMsg = (data) => { try { const m = JSON.parse(data); return m && typeof m === 'object' ? m : null; } catch (e) { return null; } };
 // anfitrião: abre um canal direto com cada convidado
-async function hostStartRtc(nonce) {
+async function hostStartRtc(nonce, tries = 0) {
   if (!rtcOk() || RTC.peers.has(nonce)) return;
-  const p = { pc: null, u: null, r: null, open: false, ice: [] }; RTC.peers.set(nonce, p);
+  const p = { pc: null, u: null, r: null, open: false, ice: [], tries }; RTC.peers.set(nonce, p);
   try {
     const pc = p.pc = new RTCPeerConnection({ iceServers: await iceServers() });
     p.u = pc.createDataChannel('u', { ordered: false, maxRetransmits: 0 });
@@ -2012,7 +2012,12 @@ async function hostStartRtc(nonce) {
     const upd = () => { p.open = p.u.readyState === 'open' && p.r.readyState === 'open'; };
     for (const ch of [p.u, p.r]) { ch.onopen = upd; ch.onclose = upd; ch.onmessage = (ev) => { const m = parseMsg(ev.data); if (m) { m.from = nonce; hostOnMessage(m); } }; }
     pc.onicecandidate = (e) => { if (e.candidate) pub('c/' + nonce, { t: 'ice', c: e.candidate.toJSON() }); };
-    pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') { p.open = false; } };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed') {
+        p.open = false; const tries = (p.tries || 0) + 1;
+        if (tries <= 4 && H.clients.has(nonce)) setTimeout(() => { if (RTC.peers.get(nonce) === p && H.clients.has(nonce)) { hostRtcDrop(nonce); hostStartRtc(nonce, tries); } }, 1500 * tries);
+      } else if (pc.connectionState === 'closed') p.open = false;
+    };
     await pc.setLocalDescription(await pc.createOffer());
     pub('c/' + nonce, { t: 'rtc', sdp: pc.localDescription.toJSON() });
   } catch (e) { p.open = false; }
@@ -2096,6 +2101,103 @@ async function clientOpen(code, onStatus) {
     await new Promise((r) => setTimeout(r, 1000));
   }
   if (!NET.welcomed) throw { code: 'noroom' };
+}
+/* =================== rede compacta + suavização =================== */
+/* O snapshot vai como listas de números em vez de objetos com nomes:
+   cerca de 5× menor, o que reduz perda de pacote e fila no servidor de reserva.
+   - todo pacote: posição, mira, estado, vida, arma
+   - a cada 3: dinheiro, inventário, ultimate, reanimação
+   - a cada 15 (ou logo após começar a rodada): nome, classe, placar, magia, cartas */
+const FLAGS = ['cr', 'al', 'b', 'f', 'su', 'rl', 'ck', 'fo'];
+const MED = ['rp', 'u', 'm', 'iv'];
+const i100 = (v) => Math.round((+v || 0) * 100);
+function packSnap(sn, med, heavy) {
+  const bm = sn.bm || {};
+  const out = { t: 's', q: sn.sq, h: Math.round(now * 1000), g: [sn.ph, sn.tm, sn.rd, sn.rs, sn.sc, sn.at, sn.wn, bm.st, bm.by, i100(bm.x), i100(bm.z), bm.s, i100(bm.pr), i100(bm.dp)], p: [] };
+  if (med) out.md = 1; if (heavy) out.hv = 1;
+  for (const p of sn.ps) {
+    let fl = 0; FLAGS.forEach((k, j) => { if (p[k]) fl |= 1 << j; });
+    const a = [p.i, p.t, i100(p.x), i100(p.y), i100(p.z), i100(p.yw), i100(p.pt), fl, p.hp, p.w, p.tp];
+    if (med) a.push(i100(p.rp), p.u, p.m, p.iv);
+    if (heavy) a.push(p.n, p.c, p.k, p.d, i100(p.sx), i100(p.sz), i100(p.sy), p.hu, p.ru, p.rv, p.el, p.ef);
+    out.p.push(a);
+  }
+  return out;
+}
+function unpackSnap(m) {
+  if (!Array.isArray(m.g) || !Array.isArray(m.p)) return null;
+  const g = m.g, d = (v) => (+v || 0) / 100;
+  const s = { t: 'snap', sq: m.q, ht: (+m.h || 0) / 1000, ph: g[0], tm: g[1], rd: g[2], rs: g[3], sc: g[4], at: g[5], wn: g[6], lt: m.hv ? 0 : 1,
+    bm: { st: g[7], by: g[8], x: d(g[9]), z: d(g[10]), s: g[11], pr: d(g[12]), dp: d(g[13]) }, ps: [] };
+  for (const a of m.p) {
+    if (!Array.isArray(a)) continue;
+    const p = { i: a[0], t: a[1], x: d(a[2]), y: d(a[3]), z: d(a[4]), yw: d(a[5]), pt: d(a[6]), hp: a[8], w: a[9], tp: a[10] };
+    FLAGS.forEach((k, j) => { p[k] = (a[7] >> j) & 1; });
+    let j = 11;
+    if (m.md) { p.rp = d(a[j++]); p.u = a[j++]; p.m = a[j++]; p.iv = a[j++]; }
+    if (m.hv) { p.n = a[j++]; p.c = a[j++]; p.k = a[j++]; p.d = a[j++]; p.sx = d(a[j++]); p.sz = d(a[j++]); p.sy = d(a[j++]); p.hu = a[j++]; p.ru = a[j++]; p.rv = a[j++]; p.el = a[j++]; p.ef = a[j++]; }
+    s.ps.push(p);
+  }
+  return s;
+}
+
+/* ---------- ping ---------- */
+const PING = { ms: 0, sent: 0 };
+function hostSendTo(nonce, msg) {
+  const p = RTC.peers.get(nonce), s = JSON.stringify(msg);
+  if (p && p.open && sendDc(p.u, s)) return;
+  pub('c/' + nonce, msg);
+}
+function onPong(m) { const rtt = (performance.now() - (+m.c || 0)); if (rtt >= 0 && rtt < 5000) PING.ms = PING.ms ? PING.ms * .7 + rtt * .3 : rtt; }
+
+/* ---------- interpolação dos outros jogadores ----------
+   Em vez de "chutar" onde o inimigo está, o jogo mostra cada um um pouquinho no passado
+   (cerca de 1,5 pacote) e desliza entre as posições reais recebidas. Assim ninguém dá
+   "teleporte" quando um pacote atrasa ou se perde. */
+const INTERP = { off: null, jit: 0, buf: new Map() };
+function interpPush(s) {
+  if (!s.ht) return;
+  const t = now, off = t - s.ht;
+  if (INTERP.off === null || off < INTERP.off) INTERP.off = off; else INTERP.off += (off - INTERP.off) * .02;
+  INTERP.jit += (Math.max(0, off - INTERP.off) - INTERP.jit) * .1;
+  for (const p of s.ps) {
+    let b = INTERP.buf.get(p.i); if (!b) INTERP.buf.set(p.i, (b = []));
+    if (b.length && b[b.length - 1].t >= s.ht) continue;
+    b.push({ t: s.ht, x: p.x, y: p.y, z: p.z, yw: p.yw, cr: p.cr });
+    if (b.length > 24) b.shift();
+  }
+}
+function interpDelay() { const rate = netMode() === 'direta' ? 1 / 30 : 1 / 20; return clamp(rate * 1.5 + INTERP.jit * 1.5, .045, .2); }
+function interpSample(id) {
+  const b = INTERP.buf.get(id); if (!b || !b.length || INTERP.off === null) return null;
+  const rt = now - INTERP.off - interpDelay();
+  if (rt <= b[0].t) return b[0];
+  for (let i = b.length - 1; i > 0; i--) {
+    const a = b[i - 1], c = b[i];
+    if (rt >= a.t && rt <= c.t) {
+      if (Math.hypot(c.x - a.x, c.z - a.z) > 5) return c; // teleporte (reaparecer)
+      const k = (rt - a.t) / Math.max(.001, c.t - a.t);
+      return { x: a.x + (c.x - a.x) * k, y: a.y + (c.y - a.y) * k, z: a.z + (c.z - a.z) * k, yw: a.yw + angDiff(c.yw, a.yw) * k, cr: a.cr + (c.cr - a.cr) * k };
+    }
+  }
+  // passou do último pacote: continua o movimento por no máximo 0,12 s
+  const c = b[b.length - 1], a = b[b.length - 2];
+  if (!a) return c;
+  const span = Math.max(.001, c.t - a.t), ex = Math.min(.12, rt - c.t);
+  if (Math.hypot(c.x - a.x, c.z - a.z) > 5) return c;
+  return { x: c.x + (c.x - a.x) / span * ex, y: c.y, z: c.z + (c.z - a.z) / span * ex, yw: c.yw, cr: c.cr };
+}
+function interpReset() { INTERP.off = null; INTERP.jit = 0; INTERP.buf.clear(); }
+
+/* ---------- anfitrião continua rodando com a aba em segundo plano ou com FPS baixo ---------- */
+let bgTicker = null, lastHostStep = 0;
+function startBgTicker(step) {
+  if (bgTicker || typeof Worker !== 'function' || typeof Blob !== 'function') return;
+  try {
+    const url = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},25)'], { type: 'text/javascript' }));
+    bgTicker = new Worker(url);
+    bgTicker.onmessage = () => { if (NET.role === 'host' && performance.now() - lastHostStep > 40) step(); };
+  } catch (e) { bgTicker = null; }
 }
 /* =================== anfitrião: regras da partida =================== */
 const H = { map: 0, mode: 'classic', strikes: [], turrets: [], turretSeq: 0, revives: [], started: false, bots: true, ents: new Map(), clients: new Map(), nextC: 1, phase: 'lobby', timer: 0, round: 0, rs: 0, score: [0, 0], att: 0, loss: [0, 0],
@@ -2319,6 +2421,7 @@ function hostEvent(id, ev) {
 }
 function hostState(id, s) {
   const e = H.ents.get(id); if (!e || !s) return; e.last = now;
+  if (typeof s.q === 'number') { if (e.stQ && s.q <= e.stQ && e.stQ - s.q < 1e6) return; e.stQ = s.q; } // pacote velho chegou atrasado
   if (s.rs !== H.rs || !e.alive) return;
   e.x = clamp(num(s.x, e.x), 0, MW); e.z = clamp(num(s.z, e.z), 0, MD);
   e.y = clamp(num(s.y), -1, 3); e.yaw = num(s.a); e.pitch = clamp(num(s.p), -1.5, 1.5); e.crouch = s.c ? 1 : 0; e.f = s.f ? 1 : 0; e.rl = s.r ? 1 : 0;
@@ -2404,7 +2507,12 @@ function hostFlush() {
   if (H.evq.length) { hostBroadcast({ t: 'ev', q: ++evSeq, l: H.evq }, true); H.evq = []; }
   if (lobbyDirty || now - H.lastLobby > 1.5 * TS) { lobbyDirty = false; H.lastLobby = now; hostBroadcast(lobbyMsg(), true); }
   const direct = netMode() === 'direta', rate = direct ? 1 / 30 : 1 / 20;
-  if (H.started && now - H.lastSnap >= rate * TS) { H.lastSnap = now; snapSeq++; const full = snapSeq % 10 === 1; const sn = buildSnap(!full); sn.sq = snapSeq; hostBroadcast(sn, false); }
+  if (H.rs !== H.sentRs) { H.sentRs = H.rs; H.forceHeavy = 8; }
+  if (H.started && now - H.lastSnap >= rate * TS) {
+    H.lastSnap = now; snapSeq++;
+    const heavy = snapSeq % 15 === 1 || H.forceHeavy > 0, med = heavy || snapSeq % 3 === 1; if (H.forceHeavy > 0) H.forceHeavy--;
+    const sn = buildSnap(!heavy); sn.sq = snapSeq; hostBroadcast(packSnap(sn, med, heavy), false);
+  }
 }
 function hostOnMessage(m) {
   const from = typeof m.from === 'string' ? m.from.slice(0, 16) : null; if (!from) return;
@@ -2428,6 +2536,7 @@ function hostOnMessage(m) {
   const e = H.ents.get(c.id); if (e) e.last = now;
   switch (m.t) {
     case 'st': hostState(c.id, m); break;
+    case 'ping': hostSendTo(from, { t: 'po', c: m.c }); break;
     case 'ev': hostEvent(c.id, m.e); break;
     case 'pick': if (e) { if (m.el !== undefined) e.el = clamp(num(m.el) | 0, 0, 4); else { const s = clamp(num(m.s) | 0, 0, 1), i = clamp(num(m.c) | 0, 0, 3); e.cls[s] = i; } hostLobbyDirty(); } break;
     case 'team': if (e && !H.started && humansIn(1 - e.team) < TEAM_SIZE) { e.team = 1 - e.team; hostLobbyDirty(); } break;
@@ -2867,15 +2976,15 @@ function equip(slot, force) {
   me.slot = slot; me.wid = id; me.reloadUntil = 0; me.reloadW = null; me.swapT = now + (WPN[id] && WPN[id].type === 'sniper' ? .6 : .4); me.recIdx = 0;
   if (WPN[id]) ensureAmmo(id); tone(380, .05, .06, 'square');
 }
-let lastSnapSq = 0;
+let lastSnapSq = 0, stSeq = 0;
 const HEAVY = ['n', 'c', 'k', 'd', 'sx', 'sz', 'sy', 'hu', 'ru', 'rv', 'el', 'ef'];
 function applySnap(s) {
   if (!s || !Array.isArray(s.ps)) return;
   if (s.sq) { if (s.sq <= lastSnapSq && lastSnapSq - s.sq < 1000) return; lastSnapSq = s.sq; }
   const prev = S && S.map;
-  for (const p of s.ps) { const o = prev && prev.get(p.i); if (p.n === undefined) { for (const k of HEAVY) p[k] = o ? o[k] : (k === 'n' ? '…' : k === 'c' ? [0, 0] : k === 'ef' ? [] : 0); } p.at = now; }
+  for (const p of s.ps) { const o = prev && prev.get(p.i); if (p.m === undefined) { for (const k of MED) p[k] = o ? o[k] : (k === 'iv' ? ['', 'p9', 0, 0, 0, 0, 0, 0] : 0); } if (p.n === undefined) { for (const k of HEAVY) p[k] = o ? o[k] : (k === 'n' ? '…' : k === 'c' ? [0, 0] : k === 'ef' ? [] : 0); } p.at = now; }
   s.map = new Map(s.ps.map((p) => [p.i, p])); if (!s.bm) s.bm = { st: 'none' };
-  S = s;
+  S = s; if (!isHost()) interpPush(s);
   const e = s.map.get(NET.myId);
   if (e && s.rs !== lastRs && e.sx !== undefined) {
     lastRs = s.rs;
@@ -2895,7 +3004,7 @@ function sendEv(ev) { if (isHost()) hostEvent(NET.myId, ev); else toHost({ t: 'e
 function sendState() {
   const st = { rs: lastRs, x: r2(me.x), y: r2(me.y), z: r2(me.z), a: r2(me.yaw), p: r2(me.pitch), c: me.crouch > .5 ? 1 : 0, w: me.wid, f: me.f, su: me.shieldUp ? 1 : 0, r: now < me.reloadUntil ? 1 : 0 };
   if (isHost()) hostState(NET.myId, st);
-  else if (now - lastSend > (RTC.open ? 1 / 40 : 1 / 20) * TS) { lastSend = now; st.t = 'st'; toHost(st, false); }
+  else if (now - lastSend > (RTC.open ? 1 / 40 : 1 / 25) * TS) { lastSend = now; st.t = 'st'; st.q = ++stSeq; toHost(st, false); }
 }
 
 /* efeitos de rede (todas as máquinas) */
@@ -3135,9 +3244,9 @@ function syncViews(dt) {
     if ((!wasAlive && v.alive) || Math.hypot(p.x - v.x, p.z - v.z) > 5) { v.x = p.x; v.z = p.z; v.y = p.y; v.yaw = p.yw; v.s.fall = 0; }
     const px = v.x, pz = v.z;
     if (v.lastP !== p) { if (v.lastP && p.at > v.lastP.at) { const dtp = Math.max(.016, p.at - v.lastP.at); v.vx = (p.x - v.lastP.x) / dtp; v.vz = (p.z - v.lastP.z) / dtp; if (Math.hypot(v.vx, v.vz) > 9) v.vx = v.vz = 0; } v.lastP = p; }
-    const ahead = isHost() ? 0 : Math.min(.1, now - (p.at || now) + .03);
-    const tx = p.x + (v.vx || 0) * ahead, tz = p.z + (v.vz || 0) * ahead;
-    v.x += (tx - v.x) * k; v.z += (tz - v.z) * k; v.y += (p.y - v.y) * k; v.yaw += angDiff(p.yw, v.yaw) * k; v.crouch += (p.cr - v.crouch) * k;
+    const ip = isHost() ? null : interpSample(p.i);
+    if (ip) { v.x = ip.x; v.z = ip.z; v.y = ip.y; v.yaw = ip.yw; v.crouch += (ip.cr - v.crouch) * k; }
+    else { v.x += (p.x - v.x) * k; v.z += (p.z - v.z) * k; v.y += (p.y - v.y) * k; v.yaw += angDiff(p.yw, v.yaw) * k; v.crouch += (p.cr - v.crouch) * k; }
     v.speed = Math.hypot(v.x - px, v.z - pz) / Math.max(dt, .001);
     const s = v.s; setSoldierGun(s, p.w || 'p9');
     const cloaked = !!p.ck && !ally;
@@ -3292,7 +3401,7 @@ function updateHUD() {
   ui.vignette.style.opacity = Math.max(hu * .8, alive && hp < 30 ? .35 : 0);
   ui.flashOv.style.opacity = now < me.blindUntil ? clamp((me.blindUntil - now) / Math.max(.5, me.blindMax * .6), 0, 1) : 0;
   if (!alive) { const v = spectateTarget(); ui.spec.hidden = false; setText(ui.spec, 'sp', !e ? 'Você entra na próxima rodada' : v ? 'Assistindo ' + v.p.n + ' · Espaço troca' + (v.p.hu ? '' : ' · T assume este bot') : 'Aguardando a próxima rodada'); } else ui.spec.hidden = true;
-  setText(ui.roomInfo, 'ri', MAPS[MAP_ID].name + ' · ' + (NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via servidor') : 'reconectando…')));
+  setText(ui.roomInfo, 'ri', MAPS[MAP_ID].name + ' · ' + (NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via servidor') + (NET.role === 'client' && PING.ms ? ' · ' + Math.round(PING.ms) + ' ms' : '') : 'reconectando…')));
   if (now - revealedT < 3.5 * TS) { if (cache.rv !== 1) { cache.rv = 1; banner('O inimigo invadiu as câmeras: você está visível', true); } } else cache.rv = 0;
   if (now > bannerUntil) ui.banner.hidden = true; if (now > bigUntil) ui.bigmsg.hidden = true;
   if (buyOpen) { if (!buyWindow() || !alive || !inBuyZone(side, me.x, me.z)) closeBuy(); else renderBuy(); }
@@ -3465,6 +3574,8 @@ function clientOnMessage(m) {
     case 'full': setNet('Essa sala está cheia (10 pessoas).', true); NET.fullErr = true; break;
     case 'lobby': if (NET.welcomed) onLobby(m); break;
     case 'snap': if (NET.welcomed) applySnap(m); break;
+    case 's': if (NET.welcomed) { const s = unpackSnap(m); if (s) applySnap(s); } break;
+    case 'po': onPong(m); break;
     case 'ev': if (NET.welcomed && Array.isArray(m.l)) m.l.forEach(applyFx); break;
     case 'hostgone': hostGone(); break;
   }
@@ -3507,7 +3618,7 @@ function backToRoom() {
 function leaveAll() {
   playing = false; firing = false; aiming = false; noLock = false;
   try { document.exitPointerLock(); } catch (e) {}
-  netClose(); hostReset(); lastEvQ = 0; lastSnapSq = 0;
+  netClose(); hostReset(); lastEvQ = 0; lastSnapSq = 0; interpReset(); PING.ms = 0;
   for (const v of views.values()) disposeSoldier(v.s); views.clear();
   clearFx(); S = null; L = null; lastRs = -1; worldBomb.visible = false; bombLight.intensity = 0;
   $('hud').hidden = true; $('board').hidden = true; $('scope').hidden = true; show('home');
@@ -3586,13 +3697,22 @@ function applyQuality() {
   resize();
 }
 window.addEventListener('resize', resize);
-let last = performance.now() / 1000 * TS, orbit = 0, wantsFov = 75;
+let last = performance.now() / 1000 * TS, orbit = 0, wantsFov = 75, lastHostT = last, hostFrames = 0;
+// simulação do anfitrião separada do desenho: roda no quadro normal e, se a aba sair de foco
+// ou o FPS cair, um relógio em segundo plano continua mandando o jogo para os amigos
+function hostStep(t) {
+  const dt = Math.min(.05 * TS, t - lastHostT); if (dt <= 0) return; lastHostT = t; now = t;
+  hostTick(dt);
+  if (playing) applySnap(buildSnap(++hostFrames % 15 !== 1));
+  hostFlush(); lastHostStep = performance.now();
+}
+startBgTicker(() => hostStep(performance.now() / 1000 * TS));
 function frame() {
   requestAnimationFrame(frame);
   const t = performance.now() / 1000 * TS; let dt = t - last; last = t; now = t; if (dt > .05 * TS) dt = .05 * TS; if (dt > .2) dt = .2;
   if (playing) {
     updateMe(dt);
-    if (isHost()) { hostTick(dt); applySnap(buildSnap()); }
+    if (isHost()) hostStep(t);
     syncViews(dt);
     // câmera: própria visão ou assistindo um aliado
     const alive = myAlive();
@@ -3618,13 +3738,12 @@ function frame() {
     updateHUD(); drawMinimap();
     if (!isHost() && NET.role === 'client' && NET.lastHost && now - NET.lastHost > 8 * TS) hostGone();
   } else {
-    if (isHost()) hostTick(dt);
+    if (isHost()) hostStep(t);
     orbit += dt * .04;
     camera.position.set(MW / 2 + Math.cos(orbit) * 46, 22, MD / 2 + Math.sin(orbit) * 34); camera.lookAt(MW / 2, 0, MD / 2);
     wantsFov = 55;
   }
-  if (isHost()) hostFlush();
-  if (NET.role === 'client' && NET.welcomed && now - lastPing > 2 * TS) { lastPing = now; toHost({ t: 'ping' }, true); }
+  if (NET.role === 'client' && NET.welcomed && now - lastPing > 1 * TS) { lastPing = now; toHost({ t: 'ping', c: performance.now() }, false); }
   wantsFov += me.fovKick || 0;
   if (Math.abs(camera.fov - wantsFov) > .2) { camera.fov += (wantsFov - camera.fov) * Math.min(1, dt * 14); camera.updateProjectionMatrix(); }
   updateFx(dt); updateWorld(dt); updateMagic(dt);
