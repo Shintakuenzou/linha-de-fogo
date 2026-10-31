@@ -121,6 +121,20 @@ h1 span { color: var(--accent); }
 .facts { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px; }
 .facts div { font: 500 12px var(--mono); color: var(--muted); }
 .facts b { display: block; font: 800 26px/1 var(--display); color: var(--ink); }
+.hero h1 { text-shadow: 0 6px 40px rgba(0,0,0,.55); }
+.hero-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 22px; max-width: 520px; }
+.hcard { display: grid; gap: 6px; text-align: left; background: rgba(10,13,17,.78); border: 1px solid var(--line); border-radius: 12px; padding: 14px; color: var(--ink); cursor: pointer; position: relative; overflow: hidden; transition: border-color .15s, transform .15s; }
+.hcard::after { content: ""; position: absolute; inset: auto -30% -60% auto; width: 140px; height: 140px; background: radial-gradient(circle, rgba(233,162,59,.18), transparent 70%); }
+.hcard:hover { border-color: var(--accent); transform: translateY(-2px); }
+.hcard .hk { font: 700 12px var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+.hcard b { font: 800 22px var(--display); display: flex; align-items: center; gap: 8px; }
+.hcard .hs { font-size: 12px; color: var(--muted); }
+.coin { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, #e9a23b 55%, #8a5a12); }
+.mini-x { position: relative; height: 30px; display: block; }
+.mini-x > span { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.mini-x i { position: absolute; }
+.cfg-body { display: grid; gap: 10px; margin-top: 10px; }
+#srvState.ok { color: var(--ally); } #srvState.bad { color: var(--foe); }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .panel h2 { font: 700 16px var(--display); letter-spacing: .14em; text-transform: uppercase; margin: 0; }
 label.fld { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
@@ -178,6 +192,7 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
 
 .center-card { margin: auto; width: min(460px, 100%); }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .center-card h2 { font: 800 40px/1 var(--display); text-transform: uppercase; margin: 0; }
 .row2 { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -193,7 +208,59 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
 .buyhead h2 { margin: 0; font: 800 30px/1 var(--display); text-transform: uppercase; }
 .buyhead .cash { font: 800 28px/1 var(--display); color: #8fd18a; }
 .buyhead .tm { font: 500 12px var(--mono); color: var(--muted); }
-.buycols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.buycols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.buycol.sell h3 { color: #8fd18a; }
+.sellbtn .pr { color: #ffd27a; }
+.sellnote { font-size: 12px; color: var(--muted); margin: 0; }
+/* editor de mira */
+#cross .ring { position: absolute; border-radius: 50%; background: transparent !important; }
+.xed { display: grid; grid-template-columns: 220px 1fr; gap: 18px; align-items: start; }
+@media (max-width: 760px) { .xed { grid-template-columns: 1fr; } }
+.xprev { position: relative; height: 220px; border-radius: 10px; border: 1px solid var(--line); overflow: hidden;
+  background: linear-gradient(180deg, #8fb4d6 0 45%, #c9a878 45% 100%); }
+.xprev.dark { background: linear-gradient(180deg, #1b232b 0 45%, #3a3128 45% 100%); }
+.xprev .xc { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.xprev .xc i { position: absolute; }
+.xrows { display: grid; gap: 10px; }
+.xrow { display: grid; grid-template-columns: 110px 1fr 42px; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.xrow output { font: 600 12px var(--mono); color: var(--ink); text-align: right; }
+.xchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.xsw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.xsw[aria-pressed="true"] { border-color: var(--ink); }
+.wide-card { width: min(760px, calc(100vw - 32px)); }
+/* arsenal */
+.ars-card { width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: auto; }
+.ars-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.coins { display: flex; align-items: center; gap: 8px; font: 600 14px var(--body); color: var(--muted); }
+.coins b { font: 800 26px var(--display); color: #ffd27a; }
+.coins i { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, #e9a23b 55%, #8a5a12); box-shadow: 0 0 10px rgba(233,162,59,.6); }
+.tabs { display: flex; gap: 6px; margin: 12px 0; flex-wrap: wrap; }
+.ars-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.ars-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ars-grid.small { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); max-height: 260px; overflow: auto; }
+.skin { position: relative; background: #0b0d10; border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 4px; cursor: pointer; text-align: left; color: var(--ink); }
+.skin:hover, .skin.sel { border-color: var(--accent); }
+.skin .sw { height: 54px; border-radius: 6px; background-size: cover; background-position: center; border-bottom: 3px solid var(--rc); }
+.skin .gn { font: 700 12px var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.skin .fn { font: 600 13px var(--body); }
+.skin .wr { font: 500 11px var(--mono); color: var(--muted); }
+.skin .eqb { position: absolute; top: 6px; right: 6px; font: 700 10px var(--mono); background: var(--accent); color: #111; padding: 1px 5px; border-radius: 4px; }
+.skin-acts { display: flex; gap: 6px; margin-top: 4px; }
+.skin-acts button { flex: 1; font-size: 11px; padding: 5px 6px; }
+.odds { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 6px 0 12px; }
+.odds span { font: 600 11px var(--mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--rc); color: var(--rc); }
+.reel-wrap { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: #07090b; height: 138px; }
+.reel { display: flex; gap: 8px; padding: 10px; will-change: transform; }
+.reel .skin { min-width: 140px; pointer-events: none; }
+.reel-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.trade-cols { display: grid; grid-template-columns: 1fr 240px; gap: 14px; }
+@media (max-width: 760px) { .trade-cols { grid-template-columns: 1fr; } }
+.trade-cols h3, #arsTrade > h3 { font: 700 13px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 10px 0 6px; }
+.who { display: grid; gap: 6px; margin-bottom: 10px; }
+.who button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.trade-in { display: grid; gap: 8px; }
+.offer { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #0b0d10; }
+#earnToast { position: fixed; right: 18px; bottom: 210px; z-index: 40; font: 700 15px var(--display); letter-spacing: .06em; color: #ffd27a; background: rgba(10,12,14,.85); border: 1px solid #5a4520; padding: 6px 12px; border-radius: 8px; pointer-events: none; }
 @media (max-width: 760px) { .buycols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .buycol h3 { margin: 0 0 6px; font: 700 13px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .buycol { display: grid; gap: 6px; align-content: start; }
@@ -303,7 +370,7 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
     <div id="bigmsg" hidden></div>
     <div id="vignette"></div>
     <div id="dmgdir"></div>
-    <div id="cross"><i class="h" id="cl"></i><i class="h" id="cr"></i><i class="v" id="ct"></i><i class="v" id="cb"></i><i class="dot"></i></div>
+    <div id="cross"><i class="h" id="cl"></i><i class="h" id="cr"></i><i class="v" id="ct"></i><i class="v" id="cb"></i><i class="dot" id="cdot"></i><i class="ring" id="cring"></i></div>
     <div id="hitmark"></div>
     <div id="prompt" hidden><div id="promptText"></div><div id="prog"><i id="progBar"></i></div></div>
     <div id="spec" hidden></div>
@@ -345,11 +412,15 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
   <!-- tela inicial -->
   <div class="overlay" id="home">
     <div class="home">
-      <div>
-        <p class="eyebrow">Tiro tático · 5 contra 5 · vila no deserto</p>
+      <div class="hero">
+        <p class="eyebrow">Tiro tático · 5 contra 5 · direto no navegador</p>
         <h1>Linha <span>de</span> Fogo</h1>
-        <p class="lead">Terroristas levam a bomba até o ponto A ou B numa vila no deserto. As forças especiais defendem e desarmam. Compre armas e colete a cada rodada, domine o recuo de cada arma e use a função da sua classe.</p>
-        <div class="facts"><div><b>3</b>mapas</div><div><b>5</b>magias</div><div><b>8</b>ultimates</div><div><b>22</b>cartas</div></div>
+        <p class="lead">Ataque leva a bomba até o ponto A ou B. Defesa segura e desarma. Compre e venda armas a cada rodada, aprenda o spray de cada fuzil, atire através de paredes finas e monte seu arsenal de skins.</p>
+        <div class="facts"><div><b>3</b>mapas</div><div><b>9</b>armas</div><div><b>15</b>skins</div><div><b>60 Hz</b>rede direta</div></div>
+        <div class="hero-cards">
+          <button class="hcard" id="homeArs"><span class="hk">Arsenal</span><b><i class="coin"></i><span id="homeCoins">0</span> fichas</b><span class="hs" id="homeSkins">Abra caixas e troque skins</span></button>
+          <button class="hcard" id="homeCross"><span class="hk">Mira</span><span class="mini-x" id="homeXC"></span><span class="hs">Cor, tamanho, estilo</span></button>
+        </div>
       </div>
       <div class="panel">
         <label class="fld" for="nick">Seu nome<input type="text" id="nick" maxlength="16" placeholder="Seu nome" autocomplete="off"></label>
@@ -360,11 +431,20 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
         <p id="netStatus">Crie uma sala e mande o link de convite.</p>
         <div class="or">sozinho</div>
         <button class="btn sec" id="botBtn">Treinar com bots</button>
-        <div class="set" role="group" aria-label="Qualidade gráfica">Gráficos
-          <button class="chip" id="qHigh" aria-pressed="true">Alta</button>
-          <button class="chip" id="qLow" aria-pressed="false">Leve</button>
-        </div>
-        <label class="set" for="sens">Sensibilidade <input type="range" id="sens" min="0.3" max="2.5" step="0.05" value="1"></label>
+        <details class="cfg">
+          <summary>Configurações</summary>
+          <div class="cfg-body">
+            <div class="set" role="group" aria-label="Qualidade gráfica">Gráficos
+              <button class="chip" id="qHigh" aria-pressed="true">Alta</button>
+              <button class="chip" id="qLow" aria-pressed="false">Leve</button>
+            </div>
+            <label class="set" for="sens">Sensibilidade <input type="range" id="sens" min="0.3" max="2.5" step="0.05" value="1"></label>
+            <label class="fld" for="srvInput">Servidor próprio (opcional)
+              <div class="join"><input type="text" id="srvInput" placeholder="wss://seu-servidor.fly.dev" autocomplete="off" spellcheck="false" style="text-transform:none;letter-spacing:0"><button class="btn sec" id="srvSave">Testar</button></div>
+            </label>
+            <p class="note" id="srvState">Sem servidor próprio: a sala usa conexão direta e, se ela falhar, servidores públicos.</p>
+          </div>
+        </details>
         <details>
           <summary>Controles</summary>
           <div class="keys">
@@ -372,21 +452,21 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
             <kbd>Mouse</kbd><span>Mirar · clique para atirar</span>
             <kbd>Botão direito</kbd><span>Mirar pela arma · luneta no sniper</span>
             <kbd>1 2 3 4</kbd><span>Arma principal, pistola, faca, granadas</span>
-            <kbd>B</kbd><span>Menu de compra (no começo da rodada)</span>
+            <kbd>B</kbd><span>Comprar e vender (no começo da rodada)</span>
             <kbd>R</kbd><span>Recarregar</span>
             <kbd>Q</kbd><span>Função da classe</span>
             <kbd>E</kbd><span>Magia do seu elemento</span>
             <kbd>X</kbd><span>Ultimate da classe (carrega com abates e dano)</span>
             <kbd>F (segurar)</kbd><span>Plantar, desarmar ou reanimar (médico)</span>
-            <kbd>Shift</kbd><span>Andar devagar</span>
-            <kbd>C</kbd><span>Agachar</span>
+            <kbd>Shift</kbd><span>Andar devagar (sem barulho e mais preciso)</span>
+            <kbd>C</kbd><span>Agachar (mais preciso)</span>
             <kbd>Espaço</kbd><span>Pular · trocar quem você assiste quando morto</span>
             <kbd>T</kbd><span>Morto: assumir um bot vivo do seu time</span>
             <kbd>Tab</kbd><span>Placar</span>
-            <kbd>Esc</kbd><span>Pausar</span>
+            <kbd>Esc</kbd><span>Pausar · editar mira · arsenal</span>
           </div>
         </details>
-        <p class="note">Precisa de teclado e mouse. Puxe o mouse para baixo enquanto atira para segurar o recuo. Se o jogo travar, use gráficos Leve.</p>
+        <p class="note">Precisa de teclado e mouse. Puxe o mouse para baixo enquanto atira para segurar o recuo. Parado, o primeiro tiro vai exatamente na mira. Se o jogo travar, use gráficos Leve.</p>
       </div>
     </div>
   </div>
@@ -429,8 +509,70 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
         <p class="note" id="roomNote"></p>
         <div class="row2">
           <button class="btn sec" id="leaveRoom">Sair</button>
+          <button class="btn sec" id="roomArs">Arsenal e trocas</button>
           <button class="btn" id="startBtn">Iniciar partida</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="arsenal" hidden>
+    <div class="panel center-card ars-card">
+      <div class="ars-head">
+        <h2>Arsenal</h2>
+        <div class="coins" title="Fichas: ganhe jogando"><i></i><b id="arsCoins">0</b> fichas</div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="chip" role="tab" id="tabInv" aria-pressed="true">Inventário</button>
+        <button class="chip" role="tab" id="tabCase" aria-pressed="false">Caixa de suprimentos</button>
+        <button class="chip" role="tab" id="tabTrade" aria-pressed="false">Trocas</button>
+      </div>
+      <div id="arsInv" class="ars-pane">
+        <div class="ars-filter" id="arsFilter"></div>
+        <div class="ars-grid" id="arsGrid"></div>
+      </div>
+      <div id="arsCase" class="ars-pane" hidden>
+        <p class="note">Cada caixa sorteia uma skin para uma arma qualquer. Quanto mais rara, mais difícil de sair. Ganhe fichas com abates, rodadas e partidas.</p>
+        <div class="odds" id="arsOdds"></div>
+        <div class="reel-wrap"><div class="reel" id="arsReel"></div><i class="reel-mark"></i></div>
+        <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="arsOpen">Abrir caixa · 100 fichas</button></div>
+        <p class="note" id="arsWon" style="text-align:center"></p>
+      </div>
+      <div id="arsTrade" class="ars-pane" hidden>
+        <p class="note" id="tradeHint">Entre numa sala com um amigo para trocar skins.</p>
+        <div class="trade-cols">
+          <div><h3>Sua oferta</h3><div class="ars-grid small" id="tradeMine"></div></div>
+          <div><h3>Para quem</h3><div id="tradeWho" class="who"></div><button class="btn" id="tradeSend" disabled>Enviar proposta</button></div>
+        </div>
+        <h3>Propostas recebidas</h3><div id="tradeIn" class="trade-in"><p class="note">Nenhuma proposta.</p></div>
+      </div>
+      <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn sec" id="arsClose">Fechar</button></div>
+    </div>
+  </div>
+  <div id="earnToast" hidden></div>
+
+  <div class="overlay" id="crossEd" hidden>
+    <div class="panel center-card wide-card">
+      <h2>Mira</h2>
+      <div class="xed">
+        <div>
+          <div class="xprev" id="xPrev"><div class="xc" id="xPrevC"></div></div>
+          <div class="set" style="margin-top:8px">Fundo <button class="chip" id="xBgL" aria-pressed="true">Claro</button><button class="chip" id="xBgD" aria-pressed="false">Escuro</button></div>
+        </div>
+        <div class="xrows">
+          <div class="xrow"><span>Estilo</span><div class="xchips" id="xStyle"></div><span></span></div>
+          <div class="xrow"><span>Cor</span><div class="xchips" id="xColor"></div><input type="color" id="xPick" aria-label="Cor personalizada"></div>
+          <label class="xrow">Tamanho<input type="range" id="xLen" min="2" max="20" step="1"><output id="oLen"></output></label>
+          <label class="xrow">Espessura<input type="range" id="xThick" min="1" max="6" step="1"><output id="oThick"></output></label>
+          <label class="xrow">Espaço<input type="range" id="xGap" min="-2" max="14" step="1"><output id="oGap"></output></label>
+          <label class="xrow">Opacidade<input type="range" id="xAlpha" min="0.3" max="1" step="0.05"><output id="oAlpha"></output></label>
+          <label class="xrow">Contorno<input type="checkbox" id="xOutline"><span></span></label>
+          <label class="xrow">Abre ao atirar<input type="checkbox" id="xDyn"><span></span></label>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:14px">
+        <button class="btn sec" id="xReset">Padrão</button>
+        <button class="btn" id="xDone">Pronto</button>
       </div>
     </div>
   </div>
@@ -441,6 +583,8 @@ details { font-size: 13px; color: var(--muted); } summary { cursor: pointer; col
       <p class="note" id="pauseInfo">A partida continua rodando.</p>
       <div id="pauseInvite" class="join" hidden><input type="text" id="pauseLink" readonly aria-label="Link de convite"><button class="btn sec" id="pauseCopy">Copiar</button></div>
       <button class="btn" id="resume">Continuar</button>
+      <button class="btn sec" id="pauseCross">Editar mira</button>
+      <button class="btn sec" id="pauseArs">Arsenal e trocas</button>
       <button class="btn sec" id="quit">Sair da partida</button>
     </div>
   </div>
@@ -634,12 +778,31 @@ const MAPS = [
     return 'r';
   } },
 ];
+const MAZE = {
+  deserto: [[4, 7, 9, .5], [24, 3, .5, 5.5], [31, 4.5, 6, .5], [4, 40.5, 9, .5], [24, 39.5, .5, 5.5], [31, 43, 6, .5], [12, 1.5, .5, 3],
+    [10.5, 16, .5, 3.5], [10.5, 28.5, .5, 3.5], [25, 18.5, .5, 4], [25, 25.5, .5, 4], [37, 18, .5, 3.5], [37, 26.5, .5, 3.5], [61, 16, .5, 3.5], [61, 28.5, .5, 3.5]],
+  cachoeira: [[4, 7, 8, .5], [4, 40.5, 8, .5], [10.5, 16, .5, 3.5], [10.5, 28.5, .5, 3.5], [18, 18, .5, 4], [18, 26, .5, 4], [30, 15, .5, 3], [30, 30, .5, 3],
+    [41, 19.5, .5, 3], [41, 25.5, .5, 3], [61, 16, .5, 3.5], [61, 28.5, .5, 3.5]],
+  desfiladeiro: [[4, 7, 8, .5], [4, 40.5, 8, .5], [10.5, 15, .5, 3.5], [10.5, 29.5, .5, 3.5], [24, 16, .5, 4], [24, 28, .5, 4], [36, 17, 4, .5], [36, 30.5, 4, .5],
+    [61, 15, .5, 3.5], [61, 29.5, .5, 3.5]],
+};
+/* ponto de nascimento seguro: se cair dentro de caixa, água ou fora do mapa, anda até o lugar livre mais perto */
+function safeSpawn(x, z) {
+  const free = (px, pz) => px > 1 && pz > 1 && px < MW - 1 && pz < MD - 1 && !WATER.some((w) => px > w.x0 - .6 && px < w.x1 + .6 && pz > w.z0 - .6 && pz < w.z1 + .6) &&
+    !boxes.some((b) => px > b.x0 - .6 && px < b.x1 + .6 && pz > b.z0 - .6 && pz < b.z1 + .6);
+  if (free(x, z)) return [x, z];
+  for (let r = .5; r < 8; r += .5) for (let a = 0; a < 16; a++) { const px = x + Math.cos(a / 16 * Math.PI * 2) * r, pz = z + Math.sin(a / 16 * Math.PI * 2) * r; if (free(px, pz)) return [+px.toFixed(2), +pz.toFixed(2)]; }
+  return [x, z];
+}
 function setMapData(i) {
   boxes.length = 0; SITES.length = 0; SPAWNS[0].length = 0; SPAWNS[1].length = 0; WATER.length = 0; BRIDGES.length = 0; FALLS.length = 0;
   MAP_ID = clamp(i | 0, 0, MAPS.length - 1);
   const perim = MAPS[MAP_ID].build(), ph = perim === 'r' ? 9 : 7;
   W(-1, -1, MW + 2, 1, ph, perim === 'r' ? 'r' : 'p'); W(-1, MD, MW + 2, 1, ph, perim === 'r' ? 'r' : 'p'); W(-1, 0, 1, MD, ph, perim === 'r' ? 'r' : 'p'); W(MW, 0, 1, MD, ph, perim === 'r' ? 'r' : 'p');
-  for (const z of [18, 21, 24, 27, 30]) { SPAWNS[0].push([4, z]); SPAWNS[1].push([68, z]); }
+  // muros de labirinto: corredores e esquinas extras entre as bases e os pontos
+  for (const m of MAZE[MAPS[MAP_ID].id] || []) ST(m[0], m[1], m[2], m[3], 3.2);
+  // nascimento: base recuada da borda; índice 2 é o centro (zona de compra)
+  for (const [dx, z] of [[5, 20], [5, 28], [6.2, 24], [7.6, 21.5], [7.6, 26.5]]) { SPAWNS[0].push(safeSpawn(dx, z)); SPAWNS[1].push(safeSpawn(MW - dx, z)); }
   STATIC_BOXES = boxes.length;
 }
 setMapData(0);
@@ -1239,14 +1402,75 @@ const GUN_DEFS = {
   sm: () => ({ body: [[M({ color: 0x55606a, roughness: .5, metalness: .4 }), tube(.025, -.055, .055, 0, 12)], [WM.steel, tube(.01, .055, .075, .0, 8)]], mag: [], grip: [0, 0], fore: [0, 0], muzzle: [0, 0], sightY: 0, magDrop: [0, 0], nade: true }),
 };
 GUN_DEFS.molotov = () => ({ body: [[M({ color: 0x3e6b2e, roughness: .2, metalness: .1, transparent: true, opacity: .85 }), tube(.03, -.06, .06, 0, 12)], [M({ color: 0xd8c9a0, roughness: 1 }), tube(.008, .06, .11, 0, 6)]], mag: [], grip: [0, 0], fore: [0, 0], muzzle: [0, 0], sightY: 0, magDrop: [0, 0], nade: true });
+/* =================== skins (acabamentos originais) =================== */
+const RARITY = [
+  { n: 'Comum', c: '#b0bac4', w: 55, sell: 15 }, { n: 'Incomum', c: '#4f9dff', w: 26, sell: 40 }, { n: 'Rara', c: '#9b6bff', w: 12, sell: 110 },
+  { n: 'Épica', c: '#ff4fb8', w: 5.5, sell: 300 }, { n: 'Lendária', c: '#ffbf3a', w: 1.5, sell: 900 },
+];
+const WEAR = [[.07, 'Novinha'], [.15, 'Pouco uso'], [.38, 'Usada em campo'], [.45, 'Gasta'], [1, 'Surrada']];
+const wearName = (v) => WEAR.find((x) => v <= x[0])[1];
+// p: padrão · c: cores · m: metal · r: aspereza
+const FINISHES = [
+  { n: 'Areia Queimada', r: 0, p: 'solid', c: ['#b89a6a', '#8a7048'], m: .2, ro: .7 },
+  { n: 'Cerrado', r: 0, p: 'camo', c: ['#6b6a3c', '#9a8650', '#3e3a24', '#c2ad78'], m: .1, ro: .8 },
+  { n: 'Cinza Urbano', r: 0, p: 'camo', c: ['#5a6068', '#8a9098', '#30353b', '#b5bac0'], m: .1, ro: .8 },
+  { n: 'Mata Atlântica', r: 1, p: 'camo', c: ['#2f5a2a', '#4f8a3a', '#1c2e18', '#7aa65a'], m: .1, ro: .75 },
+  { n: 'Oceano Profundo', r: 1, p: 'grad', c: ['#0c2a4a', '#1f6fa8', '#5fd0ff'], m: .5, ro: .35 },
+  { n: 'Carbono', r: 1, p: 'weave', c: ['#151719', '#2b2f33'], m: .4, ro: .4 },
+  { n: 'Jabuticaba', r: 2, p: 'dots', c: ['#2a0f2e', '#5b1f63', '#b04cc0'], m: .3, ro: .45 },
+  { n: 'Brasa', r: 2, p: 'grad', c: ['#1a0a06', '#b8320f', '#ffb347'], m: .35, ro: .4 },
+  { n: 'Tempestade', r: 2, p: 'stripes', c: ['#232a36', '#5a6a86', '#c8d6ff'], m: .45, ro: .35 },
+  { n: 'Ipê Amarelo', r: 3, p: 'petals', c: ['#3a2a10', '#f2c12e', '#fff1a0'], m: .2, ro: .5 },
+  { n: 'Neon Urbano', r: 3, p: 'grid', c: ['#0b0f1a', '#00f0ff', '#ff3cd2'], m: .3, ro: .3, e: .35 },
+  { n: 'Pixel Retrô', r: 3, p: 'pixel', c: ['#1d2b53', '#ff004d', '#ffa300', '#29adff', '#00e436'], m: .1, ro: .6 },
+  { n: 'Aurora', r: 4, p: 'grad', c: ['#061a2a', '#1ed6a0', '#9b6bff', '#ff7ad8'], m: .6, ro: .25, e: .15 },
+  { n: 'Ouro Velho', r: 4, p: 'marble', c: ['#5a3d0e', '#d9a530', '#fff0b0'], m: .95, ro: .2 },
+  { n: 'Vitória-régia', r: 4, p: 'petals', c: ['#0f3a2a', '#3fae6a', '#ffc2e0'], m: .25, ro: .4 },
+];
+/* carteira guardada no navegador: fichas, itens e o que está equipado em cada arma */
+const WALLET = (() => { let w = null; try { w = JSON.parse(store.get('ldf_wallet', 'null')); } catch (e) {} if (!w || typeof w !== 'object') w = {}; return Object.assign({ coins: 150, items: [], eq: {}, seq: 1 }, w); })();
+function walletSave() { store.set('ldf_wallet', JSON.stringify(WALLET)); }
+function equippedSkin(gun) { const u = WALLET.eq[gun]; return u ? WALLET.items.find((x) => x.u === u) || null : null; }
+function addItem(it) { const x = { u: Date.now().toString(36) + (WALLET.seq++).toString(36), w: it.w, f: it.f, wear: +(+it.wear).toFixed(3) }; WALLET.items.push(x); walletSave(); return x; }
+function removeItem(u) { const i = WALLET.items.findIndex((x) => x.u === u); if (i < 0) return null; const [x] = WALLET.items.splice(i, 1); for (const k in WALLET.eq) if (WALLET.eq[k] === u) delete WALLET.eq[k]; walletSave(); return x; }
+const SKIN_GUNS = ['p9', 'p45', 'mag50', 'smg', 'shotgun', 'ak', 'm4', 'sniper', 'knife'];
+const skinTexCache = {}, skinMatCache = {};
+function skinTex(fi, wear) {
+  const key = fi + ':' + Math.round(wear * 10); if (skinTexCache[key]) return skinTexCache[key];
+  const F = FINISHES[fi], C = F.c, R = (n) => { let x = Math.sin(n * 127.1 + fi * 311.7) * 43758.5453; return x - Math.floor(x); };
+  return (skinTexCache[key] = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = C[0]; g.fillRect(0, 0, w, h);
+    if (F.p === 'solid') { for (let i = 0; i < 40; i++) { g.fillStyle = C[1] + '55'; g.fillRect(R(i) * w, R(i + 50) * h, 40 * R(i + 9), 3); } }
+    else if (F.p === 'camo') { for (let i = 0; i < 70; i++) { g.fillStyle = C[1 + (i % (C.length - 1))]; g.beginPath(); g.ellipse(R(i) * w, R(i + 70) * h, 10 + 28 * R(i + 3), 6 + 16 * R(i + 5), R(i + 7) * 3, 0, 7); g.fill(); } }
+    else if (F.p === 'grad') { const gr = g.createLinearGradient(0, 0, w, h); C.forEach((c, i) => gr.addColorStop(i / (C.length - 1), c)); g.fillStyle = gr; g.fillRect(0, 0, w, h); }
+    else if (F.p === 'weave') { for (let y = 0; y < h; y += 8) for (let x = 0; x < w; x += 8) { g.fillStyle = ((x + y) / 8) % 2 ? C[1] : C[0]; g.fillRect(x, y, 8, 4); g.fillStyle = ((x + y) / 8) % 2 ? C[0] : C[1]; g.fillRect(x, y + 4, 8, 4); } }
+    else if (F.p === 'dots') { for (let i = 0; i < 160; i++) { g.fillStyle = C[1 + (i % 2)]; g.beginPath(); g.arc(R(i) * w, R(i + 160) * h, 2 + 7 * R(i + 4), 0, 7); g.fill(); } }
+    else if (F.p === 'stripes') { for (let i = -h; i < w; i += 22) { g.strokeStyle = C[1]; g.lineWidth = 9; g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke(); g.strokeStyle = C[2]; g.lineWidth = 2; g.beginPath(); g.moveTo(i + 10, 0); g.lineTo(i + 10 + h, h); g.stroke(); } }
+    else if (F.p === 'petals') { for (let i = 0; i < 26; i++) { const x = R(i) * w, y = R(i + 30) * h, r = 8 + 14 * R(i + 2); for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2 + R(i); g.fillStyle = C[1]; g.beginPath(); g.ellipse(x + Math.cos(a) * r * .6, y + Math.sin(a) * r * .6, r * .55, r * .3, a, 0, 7); g.fill(); } g.fillStyle = C[2]; g.beginPath(); g.arc(x, y, r * .25, 0, 7); g.fill(); } }
+    else if (F.p === 'grid') { g.strokeStyle = C[1]; g.lineWidth = 2; for (let i = 0; i < w; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); } g.fillStyle = C[2]; for (let i = 0; i < 12; i++) g.fillRect(Math.floor(R(i) * 8) * 32 - 2, Math.floor(R(i + 12) * 8) * 32 - 2, 36, 4); }
+    else if (F.p === 'pixel') { for (let y = 0; y < h; y += 16) for (let x = 0; x < w; x += 16) { g.fillStyle = C[Math.floor(R(x * 3 + y * 7) * C.length)]; g.fillRect(x, y, 16, 16); } }
+    else if (F.p === 'marble') { for (let i = 0; i < 30; i++) { g.strokeStyle = C[1 + (i % 2)]; g.globalAlpha = .55; g.lineWidth = 1 + 4 * R(i); g.beginPath(); let x = R(i) * w, y = 0; g.moveTo(x, y); while (y < h) { x += (R(x + y + i) - .5) * 30; y += 12; g.lineTo(x, y); } g.stroke(); } g.globalAlpha = 1; }
+    // desgaste: arranhões e bordas gastas
+    const n = Math.floor(wear * 260); for (let i = 0; i < n; i++) { g.fillStyle = `rgba(200,200,200,${.12 + wear * .35})`; g.fillRect(R(i + 900) * w, R(i + 1900) * h, 1 + 10 * R(i + 400) * wear, 1); }
+    specks(g, w, h, 1500, .05);
+  }));
+}
+function skinMats(sk) {
+  const key = sk.f + ':' + Math.round(sk.wear * 10); if (skinMatCache[key]) return skinMatCache[key];
+  const F = FINISHES[sk.f] || FINISHES[0], map = skinTex(sk.f, sk.wear);
+  const main = M({ map, metalness: F.m, roughness: clamp(F.ro + sk.wear * .35, 0, 1), emissive: F.e ? new THREE.Color(F.c[1]) : 0x000000, emissiveIntensity: F.e || 0, emissiveMap: F.e ? map : null });
+  const blade = M({ map, metalness: Math.max(.6, F.m), roughness: clamp(F.ro * .6 + sk.wear * .3, 0, 1) });
+  return (skinMatCache[key] = { main, blade });
+}
 const gunCache = {};
 function gunDef(id) { return gunCache[id] || (gunCache[id] = (GUN_DEFS[id] || GUN_DEFS.ak)()); }
 /* malha da arma: corpo mesclado por material + carregador separado (para animar a recarga) */
-function makeGun(id, shadow) {
+function makeGun(id, shadow, skin) {
   const d = gunDef(id), g = new THREE.Group(), by = new Map();
-  for (const [mat, geo] of d.body) { if (!by.has(mat)) by.set(mat, []); by.get(mat).push(geo); }
+  const sk = skin ? skinMats(skin) : null, mm = (mat) => (sk && mat !== WM.glass ? (mat === WM.blade ? sk.blade : sk.main) : mat);
+  for (const [mat, geo] of d.body) { const mt = mm(mat); if (!by.has(mt)) by.set(mt, []); by.get(mt).push(geo); }
   for (const [mat, list] of by) { const m = new THREE.Mesh(list.length > 1 ? mergeGeometries(list) : list[0], mat); m.castShadow = !!shadow; g.add(m); }
-  const mag = new THREE.Group(); for (const [mat, geo] of d.mag) { const m = new THREE.Mesh(geo, mat); m.castShadow = !!shadow; mag.add(m); }
+  const mag = new THREE.Group(); for (const [mat, geo] of d.mag) { const m = new THREE.Mesh(geo, mm(mat)); m.castShadow = !!shadow; mag.add(m); }
   g.add(mag); g.userData = { def: d, mag, id };
   return g;
 }
@@ -1330,11 +1554,13 @@ function buildVmArms(side, cls) {
   vmArms.side = side; vmArms.cls = cls;
 }
 const vmGuns = {};
+const vmSway = { x: 0, y: 0, sx: 0, sy: 0 };
 let vmGun = null;
 function vmSetGun(id) {
-  if (vmGun && vmGun.userData.id === id) return;
+  const sk = equippedSkin(id), key = id + '|' + (sk ? sk.u : '');
+  if (vmGun && vmGun.userData.key === key) return;
   if (vmGun) vmGun.visible = false;
-  vmGun = vmGuns[id] || (vmGuns[id] = makeGun(id, false)); vmGun.visible = true; if (!vmGun.parent) vmRoot.add(vmGun);
+  vmGun = vmGuns[key] || (vmGuns[key] = makeGun(id, false, sk)); vmGun.userData.key = key; vmGun.visible = true; if (!vmGun.parent) vmRoot.add(vmGun);
 }
 const vmShield = makeShieldMesh(); vmShield.position.set(-.18, -.2, -.45); vmShield.rotation.y = .25; vmShield.visible = false; vmScene.add(vmShield);
 const vmFlash = new THREE.Sprite(new THREE.SpriteMaterial({ map: texSoft, color: 0xffc670, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
@@ -1363,16 +1589,30 @@ const lathe = (pts, segs = 14) => new THREE.LatheGeometry(pts.map(([r, y]) => V2
 const upperArmGeo = () => gg('uarm2', () => lathe([[.001, -.52], [.05, -.5], [.062, -.38], [.06, -.15], [.052, .1], [.046, .4], [.042, .5], [.001, .52]], 12));
 const foreArmGeo = () => gg('farm2', () => lathe([[.001, -.52], [.044, -.5], [.05, -.28], [.046, 0], [.037, .3], [.031, .5], [.001, .52]], 12));
 /* mão com dedos dobrados (eixo +y = do pulso para os dedos) */
+/* mão fechada segurando um cilindro (eixo local x). Pulso na origem, +y = pulso→dedos, +z = frente da palma.
+   O objeto segurado fica em HAND_HOLD (coordenadas locais). */
+const HAND_HOLD = new THREE.Vector3(0, .072, .034);
 function handGeo() {
-  return gg('hand2', () => {
-    const parts = [];
-    const palm = new THREE.BoxGeometry(.078, .085, .03); palm.translate(0, .045, 0); parts.push(palm);
-    for (let f = 0; f < 4; f++) {
-      const x = -.028 + f * .019, len = [.036, .042, .04, .032][f];
-      const p1 = new THREE.CylinderGeometry(.0085, .009, len, 6); p1.translate(0, len / 2, 0); p1.rotateX(.9); p1.translate(x, .088, -.004); parts.push(p1);
-      const p2 = new THREE.CylinderGeometry(.0075, .0085, len * .8, 6); p2.translate(0, len * .4, 0); p2.rotateX(2.1); p2.translate(x, .088 + Math.cos(.9) * len, -.004 - Math.sin(.9) * len); parts.push(p2);
-    }
-    const th = new THREE.CylinderGeometry(.009, .011, .05, 6); th.translate(0, .025, 0); th.rotateZ(-.9); th.rotateX(.6); th.translate(.035, .02, -.01); parts.push(th);
+  return gg('hand3', () => {
+    const parts = [], up = new THREE.Vector3(0, 1, 0);
+    const seg = (a, b, r0, r1) => {
+      const d = new THREE.Vector3().subVectors(b, a), len = d.length();
+      const c = new THREE.CylinderGeometry(r1, r0, len, 10, 1); c.translate(0, len / 2, 0);
+      c.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, d.normalize())); c.translate(a.x, a.y, a.z); parts.push(c);
+      const j = new THREE.SphereGeometry(r1 * 1.02, 8, 6); j.translate(b.x, b.y, b.z); parts.push(j);
+    };
+    const palm = new THREE.BoxGeometry(.078, .084, .028, 2, 2, 1); palm.translate(0, .044, 0); parts.push(palm);
+    const heel = new THREE.SphereGeometry(.03, 10, 8); heel.scale(1.25, .7, .55); heel.translate(.006, .012, .004); parts.push(heel);
+    const C = HAND_HOLD, rho = .03;
+    const arc = (x, th) => new THREE.Vector3(x, C.y + rho * Math.cos(th), C.z + rho * Math.sin(th));
+    [[-.028, .9, .0078], [-.0095, 1, .0084], [.0095, .97, .0082], [.027, .82, .0072]].forEach(([x, k, r]) => {
+      const a0 = -.95, a1 = a0 + 3.25 * k, pts = [new THREE.Vector3(x, .086, .002)];
+      for (let i = 0; i <= 3; i++) pts.push(arc(x * .92, a0 + (a1 - a0) * (i / 3)));
+      for (let i = 0; i < pts.length - 1; i++) seg(pts[i], pts[i + 1], r * (1 - i * .07), r * (1 - (i + 1) * .07));
+    });
+    // polegar cruza pela frente do objeto
+    const t = [new THREE.Vector3(.036, .02, .006), new THREE.Vector3(.048, .045, .036), new THREE.Vector3(.03, .066, .064), new THREE.Vector3(.008, .078, .07)];
+    for (let i = 0; i < 3; i++) seg(t[i], t[i + 1], .011 - i * .0012, .0105 - i * .0013);
     return mergeGeometries(parts);
   });
 }
@@ -2140,7 +2380,31 @@ function contactShadows(list) {
 /* =================== rede =================== */
 /* 1) servidores MQTT públicos (WSS): encontram a sala e servem de reserva
    2) WebRTC: conexão direta entre os navegadores, combinada pelo MQTT (bem menos atraso) */
-const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+const PUBLIC_BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+/* servidor próprio (pasta server/ do repositório): vem do link de convite (?srv=) ou das configurações */
+const SRV_DEFAULT = ''; // depois do deploy, coloque aqui o endereço, ex.: 'wss://linha-de-fogo.fly.dev'
+const cleanSrv = (u) => { u = String(u || '').trim(); if (!u) return ''; if (!/^wss?:\/\//.test(u)) u = 'wss://' + u.replace(/^https?:\/\//, ''); try { const x = new URL(u); return x.protocol + '//' + x.host + (x.pathname.length > 1 ? x.pathname.replace(/\/$/, '') : ''); } catch (e) { return ''; } };
+let SRV = cleanSrv(new URLSearchParams(location.search).get('srv') || store.get('ldf_srv', '') || SRV_DEFAULT);
+const brokerList = () => (SRV ? ['relay:' + SRV] : []).concat(PUBLIC_BROKERS);
+/* cliente do servidor próprio com a mesma cara do cliente MQTT (publish/subscribe/on/end) */
+class RelayClient {
+  constructor(url, will) { this.url = url; this.will = will; this.h = {}; this.subs = new Set(); this.connected = false; this.open(); }
+  open() {
+    const ws = this.ws = new WebSocket(this.url); ws.binaryType = 'arraybuffer';
+    ws.onopen = () => { this.connected = true; if (this.will) ws.send(JSON.stringify({ op: 'will', t: this.will.topic, d: this.will.payload })); if (this.subs.size) ws.send(JSON.stringify({ op: 'sub', t: [...this.subs] })); this.emit('connect'); };
+    ws.onmessage = (e) => { let m; try { m = JSON.parse(typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data)); } catch (x) { return; } if (m && m.t) this.emit('message', m.t, m.d); };
+    ws.onclose = () => { const was = this.connected; this.connected = false; if (was) this.emit('close'); else this.emit('error', 'closed'); };
+    ws.onerror = () => {};
+  }
+  on(ev, f) { (this.h[ev] || (this.h[ev] = [])).push({ f }); return this; }
+  once(ev, f) { (this.h[ev] || (this.h[ev] = [])).push({ f, once: true }); return this; }
+  emit(ev, ...a) { const l = this.h[ev]; if (!l) return; this.h[ev] = l.filter((x) => !x.once); for (const x of l) { try { x.f(...a); } catch (e) {} } }
+  subscribe(t, o, cb) { (Array.isArray(t) ? t : [t]).forEach((x) => this.subs.add(x)); if (this.connected) this.ws.send(JSON.stringify({ op: 'sub', t: [...this.subs] })); cb && cb(null); }
+  publish(t, d) { if (this.connected && this.ws.bufferedAmount < 256e3) this.ws.send(JSON.stringify({ op: 'pub', t, d: String(d) })); }
+  reconnect() { try { this.ws.close(); } catch (e) {} this.open(); }
+  end() { this.closing = true; this.connected = false; try { this.ws.close(); } catch (e) {} }
+}
+const isRelay = () => NET.broker.startsWith('relay:');
 const NET = { role: null, client: null, code: '', myId: 'h', nonce: '', lastHost: 0, broker: '', closing: false, welcomed: false };
 const isHost = () => NET.role === 'host' || NET.role === 'solo';
 const TOPIC = (sub) => 'linhadefogo/v6/' + NET.code + '/' + sub;
@@ -2149,7 +2413,7 @@ const randId = (n, abc = 'abcdefghjkmnpqrstuvwxyz23456789') => { let s = ''; for
 function tryBroker(url, will) {
   return new Promise((res, rej) => {
     let c;
-    try { c = window.mqtt.connect(url, { clientId: 'ldf_' + randId(10), clean: true, connectTimeout: 7000, reconnectPeriod: 0, keepalive: 15, will }); }
+    try { c = url.startsWith('relay:') ? new RelayClient(url.slice(6) + '/ldf', will) : window.mqtt.connect(url, { clientId: 'ldf_' + randId(10), clean: true, connectTimeout: 7000, reconnectPeriod: 0, keepalive: 15, will }); }
     catch (e) { rej(e); return; }
     const t = setTimeout(() => { try { c.end(true); } catch (e) {} rej('timeout'); }, 8000);
     c.once('connect', () => { clearTimeout(t); res(c); });
@@ -2157,9 +2421,11 @@ function tryBroker(url, will) {
   });
 }
 async function mqttConnect(will, onStatus) {
-  if (!window.mqtt) throw { code: 'nolib' };
+  const BROKERS = brokerList();
+  if (!window.mqtt && !SRV) throw { code: 'nolib' };
   for (let i = 0; i < BROKERS.length; i++) {
-    onStatus && onStatus('Conectando ao servidor ' + (i + 1) + ' de ' + BROKERS.length + '…');
+    if (!BROKERS[i].startsWith('relay:') && !window.mqtt) continue;
+    onStatus && onStatus(BROKERS[i].startsWith('relay:') ? 'Conectando ao servidor próprio…' : 'Conectando ao servidor público ' + (i + 1 - (SRV ? 1 : 0)) + '…');
     try { const c = await tryBroker(BROKERS[i], will); NET.broker = BROKERS[i]; return c; } catch (e) {}
   }
   throw { code: 'nobroker' };
@@ -2271,7 +2537,8 @@ function toHost(m, reliable) {
   if (RTC.open) sendDc(reliable ? RTC.r : RTC.u, s); // canal direto em dúvida: manda pelos dois caminhos
   pub('h', m);
 }
-const netMode = () => NET.role === 'client' ? (clientRtcOk() ? 'direta' : 'servidor') : NET.role === 'host' ? ([...H.clients.keys()].every((n) => peerOk(RTC.peers.get(n))) ? 'direta' : 'servidor') : '';
+const relayMode = () => (isRelay() ? 'servidor próprio' : 'servidor público');
+const netMode = () => NET.role === 'client' ? (clientRtcOk() ? 'direta' : relayMode()) : NET.role === 'host' ? ([...H.clients.keys()].every((n) => peerOk(RTC.peers.get(n))) ? 'direta' : relayMode()) : '';
 function netClose() {
   NET.closing = true;
   const c = NET.client; NET.client = null;
@@ -2371,7 +2638,7 @@ function interpPush(s) {
     if (b.length > 24) b.shift();
   }
 }
-function interpDelay() { const d = netMode() === 'direta', rate = d ? 1 / 60 : 1 / 20; return clamp(rate * 1.5 + INTERP.jit * 1.5, d ? .022 : .045, .2); }
+function interpDelay() { const m = netMode(), d = m === 'direta', own = m === 'servidor próprio', rate = d ? 1 / 60 : own ? 1 / 40 : 1 / 20; return clamp(rate * 1.5 + INTERP.jit * 1.5, d ? .022 : own ? .03 : .045, .2); }
 function interpSample(id) {
   const b = INTERP.buf.get(id); if (!b || !b.length || INTERP.off === null) return null;
   const rt = now - INTERP.off - interpDelay();
@@ -2477,6 +2744,7 @@ function startRound() {
     const side = t === H.att ? 0 : 1;
     teamEnts(t).forEach((e, i) => {
       if (!e.alive) { const keepMoney = e.money; e.inv = freshInv(side); e.money = keepMoney; } // morreu: perde o que comprou
+      e.bought = {};
       const sp = SPAWNS[side][i % 5];
       Object.assign(e, { takenBy: null, alive: true, hp: 100, f: 0, su: 0, rl: 0, hasBomb: false, crouch: 0, x: sp[0], y: 0, z: sp[1], yaw: SPAWN_YAW[side], pitch: 0, sx: sp[0], sz: sp[1], syaw: SPAWN_YAW[side], revUsed: false, revProg: 0, revived: false });
       const c = clsOf(e);
@@ -2584,7 +2852,25 @@ function hostBuy(e, item) {
   else if (item === 'helm') { if (inv.armor >= 100 && inv.helm) return; inv.armor = 100; inv.helm = true; }
   else if (item === 'kit') { if (inv.kit) return; inv.kit = true; }
   else if (GRENADES[item]) { if (inv[item] >= 1) return; inv[item] = 1; }
-  e.money -= price; if (e.human) hostEmit({ k: 'bought', by: e.id, it: item });
+  e.money -= price; (e.bought || (e.bought = {}))[item] = price; if (e.human) hostEmit({ k: 'bought', by: e.id, it: item });
+}
+/* venda: valor cheio se comprou nesta rodada, metade se veio da rodada anterior; só na base e no tempo de compra */
+function sellValue(e, item) {
+  const side = sideOf(e), cls = clsOf(e), inv = e.inv, b = e.bought || {};
+  const has = item === inv.pri || (item === inv.sec && item !== DEFAULT_PISTOL[side]) || (GRENADES[item] && inv[item] >= 1);
+  if (!has) return 0;
+  if (b[item]) return b[item];
+  return GRENADES[item] ? 0 : Math.round(priceFor(item, side, cls) / 2 / 10) * 10;
+}
+function hostSell(e, item) {
+  const side = sideOf(e);
+  if (!(H.phase === 'pre' || (H.phase === 'live' && H.timer > T_LIVE - BUY_EXTRA)) || !e.alive || !inBuyZone(side, e.x, e.z)) return;
+  const v = sellValue(e, item); if (!v) return;
+  const inv = e.inv;
+  if (item === inv.pri) inv.pri = null; else if (item === inv.sec) inv.sec = DEFAULT_PISTOL[side]; else inv[item] = 0;
+  if (e.bought) delete e.bought[item];
+  if (e.w === item) e.w = inv.pri || inv.sec;
+  giveMoney(e, v); if (e.human) hostEmit({ k: 'sold', by: e.id, it: item, v });
 }
 function hostEvent(id, ev) {
   const e = H.ents.get(id); if (!e || !ev || typeof ev.k !== 'string') return;
@@ -2592,6 +2878,10 @@ function hostEvent(id, ev) {
   const v3 = (a) => Array.isArray(a) && a.length === 3 ? a.map((x) => clamp(num(x), -50, 120)) : null;
   switch (ev.k) {
     case 'buy': hostBuy(e, String(ev.it)); break;
+    case 'sell': hostSell(e, String(ev.it)); break;
+    case 'trade': { const it = cleanItem(ev.it); if (it && H.ents.get(String(ev.to))) hostEmit({ k: 'tradeOffer', from: id, to: String(ev.to), it, o: String(ev.o).slice(0, 24) }); break; }
+    case 'tradeAcc': { const it = ev.it ? cleanItem(ev.it) : null; hostEmit({ k: 'tradeDone', a: String(ev.to), b: id, o: String(ev.o).slice(0, 24), it }); break; }
+    case 'tradeNo': hostEmit({ k: 'tradeNo', a: String(ev.to), b: id, o: String(ev.o).slice(0, 24) }); break;
     case 'spell': hostSpell(e, ev); break;
     case 'ult': hostUlt(e, ev); break;
     case 'card': if (H.phase === 'pre' && e.offer && e.offer.includes(ev.c)) e.card = ev.c; break;
@@ -2634,7 +2924,7 @@ function hostState(id, s) {
   const e = H.ents.get(id); if (!e || !s) return; e.last = now;
   if (typeof s.q === 'number') { if (e.stQ && s.q <= e.stQ && e.stQ - s.q < 1e6) return; e.stQ = s.q; } // pacote velho chegou atrasado
   if (s.rs !== H.rs || !e.alive) return;
-  e.x = clamp(num(s.x, e.x), 0, MW); e.z = clamp(num(s.z, e.z), 0, MD);
+  e.x = clamp(num(s.x, e.x), .4, MW - .4); e.z = clamp(num(s.z, e.z), .4, MD - .4);
   e.y = clamp(num(s.y), -1, 3); e.yaw = num(s.a); e.pitch = clamp(num(s.p), -1.5, 1.5); e.crouch = s.c ? 1 : 0; e.f = s.f ? 1 : 0; e.rl = s.r ? 1 : 0;
   e.su = s.su && clsOf(e) === 'swat' ? 1 : 0;
   const inv = e.inv, w = String(s.w || '');
@@ -2719,7 +3009,7 @@ function hostFlush() {
   if (NET.role !== 'host') { H.evq.length = 0; lobbyDirty = false; return; }
   if (H.evq.length) { hostBroadcast({ t: 'ev', q: ++evSeq, l: H.evq }, true); H.evq = []; }
   if (lobbyDirty || now - H.lastLobby > 1.5 * TS) { lobbyDirty = false; H.lastLobby = now; hostBroadcast(lobbyMsg(), true); }
-  const direct = netMode() === 'direta', rate = direct ? 1 / 60 : 1 / 20;
+  const nm = netMode(), direct = nm === 'direta', rate = direct ? 1 / 60 : nm === 'servidor próprio' ? 1 / 40 : 1 / 20;
   if (H.rs !== H.sentRs) { H.sentRs = H.rs; H.forceHeavy = 8; }
   if (H.started && now - H.lastSnap >= rate * TS) {
     H.lastSnap = now; snapSeq++;
@@ -3217,7 +3507,7 @@ function sendEv(ev) { if (isHost()) hostEvent(NET.myId, ev); else toHost({ t: 'e
 function sendState() {
   const st = { rs: lastRs, x: r2(me.x), y: r2(me.y), z: r2(me.z), a: r2(me.yaw), p: r2(me.pitch), c: me.crouch > .5 ? 1 : 0, w: me.wid, f: me.f, su: me.shieldUp ? 1 : 0, r: now < me.reloadUntil ? 1 : 0 };
   if (isHost()) hostState(NET.myId, st);
-  else if (now - lastSend > (RTC.open ? 1 / 60 : 1 / 25) * TS) { lastSend = now; st.t = 'st'; st.q = ++stSeq; toHost(st, false); }
+  else if (now - lastSend > (RTC.open ? 1 / 60 : isRelay() ? 1 / 40 : 1 / 25) * TS) { lastSend = now; st.t = 'st'; st.q = ++stSeq; toHost(st, false); }
 }
 
 /* efeitos de rede (todas as máquinas) */
@@ -3242,21 +3532,25 @@ function applyFx(ev) {
     case 'revive': if (ev.v === NET.myId) { bigMsg('Reanimado', 'por ' + nameOfId(ev.by), 'var(--ally)', 2); } else if (S && (S.map.get(ev.v) || {}).t === myT) banner(nameOfId(ev.by) + ' reanimou ' + nameOfId(ev.v)); { const v = views.get(ev.v); if (v) v.s.fall = 0; } break;
     case 'block': { const v = views.get(ev.v); if (v) { const s = v.s.shield; addPuff(v.x - Math.sin(v.yaw) * .5, 1.2, v.z - Math.cos(v.yaw) * .5, false, 0xffe0a0); } tone(2500, .04, .06 * (distVol(0, 0) + .2), 'square'); break; }
     case 'hurt': if (ev.v === NET.myId) { hurtT = now; sHurt(); hurtAngle = -(Math.atan2(num(ev.x) - me.x, num(ev.z) - me.z) - (me.yaw + Math.PI)); me.punchP += .03; } break;
-    case 'kill': addFeed(ev.a, ev.v, ev.h, ev.w, ev.wb); if (ev.a === NET.myId && ev.v !== NET.myId) tone(700, .15, .12, 'triangle', 1200); if (ev.v === NET.myId) { firing = false; closeBuy(); } break;
-    case 'round': { const mine = ev.w === myT; bigMsg(mine ? 'Rodada vencida' : 'Rodada perdida', ev.r, mine ? 'var(--ally)' : 'var(--foe)', 4); sAnnounce(mine); break; }
+    case 'kill': if (ev.a === NET.myId && ev.v !== NET.myId) earn(ev.h ? 18 : 12, ev.h ? 'abate na cabeça' : 'abate'); addFeed(ev.a, ev.v, ev.h, ev.w, ev.wb); if (ev.a === NET.myId && ev.v !== NET.myId) tone(700, .15, .12, 'triangle', 1200); if (ev.v === NET.myId) { firing = false; closeBuy(); } break;
+    case 'round': { const mine = ev.w === myT; earn(mine ? 20 : 6, mine ? 'rodada vencida' : 'rodada jogada'); bigMsg(mine ? 'Rodada vencida' : 'Rodada perdida', ev.r, mine ? 'var(--ally)' : 'var(--foe)', 4); sAnnounce(mine); break; }
     case 'plant': bigMsg('Bomba plantada', 'Ponto ' + (SITES[ev.s] ? SITES[ev.s].name : ''), 'var(--foe)', 2.5); tone(300, .4, .2, 'sawtooth', 600); break;
     case 'defused': bigMsg('Bomba desarmada', '', 'var(--def)', 2.5); break;
     case 'boom': boomFx(num(ev.x), 1, num(ev.z), 26, 0xff8a3a); boomLight.position.set(num(ev.x), 3, num(ev.z)); boomLight.intensity = 80; sBoom(1.3); for (let k = 0; k < 8; k++) addPuff(num(ev.x) + rnd(-4, 4), rnd(.5, 4), num(ev.z) + rnd(-4, 4), true, 0x4d443a); break;
-    case 'reset': clearFx(); closeBuy(); break;
+    case 'reset': clearFx(); closeBuy(); for (const k in myBought) delete myBought[k]; break;
     case 'go': tone(520, .2, .15, 'triangle', 1040); closeBuy(); break;
     case 'half': bigMsg('Troca de lado', 'Dinheiro e armas zerados', 'var(--accent)', 3); break;
     case 'pick': if (S && S.map && (S.map.get(ev.by) || {}).t === myT) banner(nameOfId(ev.by) + ' pegou a bomba'); break;
-    case 'bought': if (ev.by === NET.myId) sBuy(); break;
+    case 'bought': if (ev.by === NET.myId) { sBuy(); myBought[ev.it] = 1; cache.buy = ''; } break;
+    case 'sold': if (ev.by === NET.myId) { delete myBought[ev.it]; cache.buy = ''; banner('Vendido: ' + buyLabel(ev.it) + ' (+$' + ev.v + ')'); tone(880, .08, .1, 'triangle', 1320); } break;
     case 'takeover': if (ev.v === NET.myId) bigMsg('Você assumiu', ev.n || 'um bot', 'var(--ally)', 2); else if (S && S.map && (S.map.get(ev.v) || {}).t === myT) banner(nameOfId(ev.v) + ' assumiu ' + (ev.n || 'um bot')); break;
     case 'joined': banner((ev.n || 'Alguém') + ' entrou na sala'); break;
     case 'left': banner((ev.n || 'Alguém') + ' saiu da sala'); break;
     case 'start': endedMatch = false; if (!isHost() && !playing) enterGame(true); break;
-    case 'over': showEnd(ev.w); break;
+    case 'over': earn(ev.w === myT ? 120 : 40, ev.w === myT ? 'partida vencida' : 'partida jogada'); showEnd(ev.w); break;
+    case 'tradeOffer': tradeOffer(ev); break;
+    case 'tradeDone': tradeDone(ev); break;
+    case 'tradeNo': tradeNo(ev); break;
     case 'tolobby': if (!isHost()) backToRoom(); break;
     case 'boom2': explosionFx(num(ev.x), Math.max(0, num(ev.y) - .3), num(ev.z), .45); sBoom(.4 * (distVol(num(ev.x), num(ev.z)) + .2)); break;
     default: applyMagicFx(ev);
@@ -3277,6 +3571,10 @@ function curSpread() {
   let s = (W.type === 'sniper' && !scoped()) ? W.hip : W.spread;
   s += W.move * Math.max(0, spd - .25) * 1.3 + (me.onGround ? 0 : .12);
   if (me.crouch > .5) s *= .7; if (keys.has('shift') && spd < .6) s *= .85;
+  // parado e sem spray: primeiro tiro quase exato (pistolas e fuzis)
+  if (me.onGround && spd < .12 && me.recIdx < .5 && W.type !== 'shotgun' && !(W.type === 'sniper' && !scoped())) s *= .12;
+  // spray contínuo vai abrindo a dispersão
+  else if (W.auto) s *= 1 + Math.min(me.recIdx, 12) * .06;
   if (timed('frenzy')) s = (W.type === 'sniper' && !scoped()) ? W.hip : W.spread;
   if (myEf('shaky')) s *= 1.5;
   return s;
@@ -3505,13 +3803,15 @@ function updateViewmodel(dt) {
   const bobA = Math.min(1, spd / 5) * (1 - me.ads * .8);
   const bob = Math.sin(now * 10) * .011 * bobA, bobX = Math.cos(now * 5) * .012 * bobA, idle = Math.sin(now * 1.4) * .003;
   me.recoil = Math.max(0, me.recoil - dt * (W.type === 'sniper' ? 4 : 10));
+  { const k = Math.min(1, dt * 9); vmSway.sx += (vmSway.x - vmSway.sx) * k; vmSway.sy += (vmSway.y - vmSway.sy) * k; vmSway.x *= Math.max(0, 1 - dt * 10); vmSway.y *= Math.max(0, 1 - dt * 10); }
+  const swA = 1 - me.ads * .75, swx = vmSway.sx * swA, swy = vmSway.sy * swA;
   const swap = clamp((me.swapT - now) / .4, 0, 1);
   const rl = now < me.reloadUntil ? 1 - (me.reloadUntil - now) / me.reloadDur : -1;
   const relTilt = rl >= 0 ? Math.sin(Math.min(1, rl * 1.15) * Math.PI) : 0;
   const swing = clamp(1 - (now - me.swingT) / .35, 0, 1), thr = clamp(1 - (now - me.throwT) / .45, 0, 1);
   const bolt = (W.type === 'sniper' || W.type === 'shotgun') ? clamp((now - me.boltT - .25) / .7, 0, 1) : 1, boltA = bolt < 1 ? Math.sin(bolt * Math.PI) : 0;
-  g.position.set(px + bobX + me.recoil * .006 - me.punchY * .2, py + bob + idle - swap * .3 - relTilt * .05 - boltA * .03 + thr * .08, pz + me.recoil * (d.pistol ? .035 : .05));
-  g.rotation.set(me.recoil * (d.pistol ? .12 : .05) + relTilt * .35 + me.punchP * .3 + swing * -1.2 + thr * -1, -me.punchY * .2 + swing * .9, relTilt * -.5 + swing * .4);
+  g.position.set(px + bobX + me.recoil * .006 - me.punchY * .2 + swx * .12, py + bob + idle + swy * .1 - swap * .3 - relTilt * .05 - boltA * .03 + thr * .08, pz + me.recoil * (d.pistol ? .035 : .05));
+  g.rotation.set(me.recoil * (d.pistol ? .12 : .05) + relTilt * .35 + me.punchP * .3 + swing * -1.2 + thr * -1 + swy * .5, -me.punchY * .2 + swing * .9 + swx * .6, relTilt * -.5 + swing * .4 + swx * .5);
   // carregador sai e volta durante a recarga
   const mag = g.userData.mag;
   if (d.pump) { const pumpA = bolt < 1 ? Math.sin(bolt * Math.PI) : 0; mag.position.set(0, 0, .08 * pumpA); }
@@ -3526,16 +3826,47 @@ function updateViewmodel(dt) {
   else if (d.nade || d.knife) Lh.T.set(-.22, -.34, -.18);
   else if (rl >= 0 && rl < .85 && !d.pump) { const mp = _fl.set(0, (d.magDrop[1] * .3) - .03, -(d.fore[0] * .3 + .06)).applyMatrix4(g.matrix); Lh.T.copy(mp); Lh.T.y += Math.sin(rl * Math.PI * 2) * -.04; }
   else if (d.pump) Lh.T.set(0, d.fore[1], -d.fore[0] + mag.position.z).applyMatrix4(g.matrix);
-  else Lh.T.set(d.pistol ? -.02 : 0, d.fore[1], -d.fore[0]).applyMatrix4(g.matrix);
+  else if (d.pistol) Lh.T.set(-.034, d.grip[1] - .012, -d.grip[0] - .012).applyMatrix4(g.matrix);
+  else Lh.T.set(0, d.fore[1] + .014, -d.fore[0]).applyMatrix4(g.matrix);
   if (W.type === 'sniper' && bolt < 1 && bolt > 0) R.T.set(.05, .045, .1).applyMatrix4(g.matrix);
+  // pegada: a mão direita envolve a empunhadura, a esquerda o guarda-mão; nos outros casos segue o antebraço
+  R.grip = !holdingBomb && !d.knife && !d.nade ? 'r' : null;
+  Lh.grip = !holdingBomb && !me.shieldUp && !d.nade && !d.knife && !(rl >= 0 && rl < .85 && !d.pump) ? (d.pistol ? 'lp' : 'l') : null;
+  if (W.type === 'sniper' && bolt < 1 && bolt > 0) R.grip = null;
   for (const A of vmArms.parts) {
-    solveIK(A.S, A.T, .36, .35, A.pole, A.E);
-    placeLimb(A.upper, A.S, A.E); placeLimb(A.fore, A.E, A.T);
-    _v3.subVectors(A.T, A.E).normalize(); A.cuff.position.copy(A.T).addScaledVector(_v3, -.04); A.cuff.quaternion.copy(A.fore.quaternion); A.cuff.scale.set(1, .06, 1);
-    A.hand.position.copy(A.T).addScaledVector(_v3, -.055); A.hand.quaternion.copy(A.fore.quaternion);
+    if (A.grip) {
+      gripQuat(A.grip, d, g, _hq); A.hand.quaternion.copy(_hq);
+      _hv.copy(HAND_HOLD).multiply(A.hand.scale).applyQuaternion(_hq); A.hand.position.copy(A.T).sub(_hv);
+      solveIK(A.S, A.hand.position, .36, .35, A.pole, A.E);
+      placeLimb(A.upper, A.S, A.E); placeLimb(A.fore, A.E, A.hand.position);
+      _v3.subVectors(A.hand.position, A.E).normalize(); A.cuff.position.copy(A.hand.position).addScaledVector(_v3, -.012); A.cuff.quaternion.copy(A.fore.quaternion); A.cuff.scale.set(1, .06, 1);
+    } else {
+      solveIK(A.S, A.T, .36, .35, A.pole, A.E);
+      placeLimb(A.upper, A.S, A.E); placeLimb(A.fore, A.E, A.T);
+      _v3.subVectors(A.T, A.E).normalize(); A.cuff.position.copy(A.T).addScaledVector(_v3, -.04); A.cuff.quaternion.copy(A.fore.quaternion); A.cuff.scale.set(1, .06, 1);
+      A.hand.position.copy(A.T).addScaledVector(_v3, -.055); A.hand.quaternion.copy(A.fore.quaternion);
+    }
   }
   // clarão do cano
   if (me.recoil > .8 && !W.quiet && !d.knife && !d.nade) { vmFlash.visible = true; _gl.set(0, d.muzzle[1], -d.muzzle[0] - .03).applyMatrix4(g.matrix); vmFlash.position.copy(_gl); vmFlash.material.rotation = Math.random() * 6; }
+}
+/* base da mão em relação à arma: colunas = eixos locais da mão (x = eixo do objeto, y = pulso→dedos, z = frente da palma) */
+const _hq = new THREE.Quaternion(), _hv = new THREE.Vector3(), _hm = new THREE.Matrix4(), _hgq = new THREE.Quaternion();
+const HAND_TUNE = { r: [0, 0, 0], l: [0, 0, 0], lp: [0, 0, 0] };
+function gripQuat(kind, d, g, out) {
+  const t = HAND_TUNE[kind];
+  if (kind === 'r') { // empunhadura quase vertical, inclinada para trás; dedos dão a volta pela frente
+    const ax = new THREE.Vector3(0, 1, .28 + t[0]).normalize(), fz = new THREE.Vector3(0, 0, -1), fy = new THREE.Vector3().crossVectors(fz, ax).normalize(); fz.crossVectors(ax, fy);
+    _hm.makeBasis(ax, fy, fz);
+  } else if (kind === 'lp') { // pistola: mão de apoio fecha por cima dos dedos da direita, palma virada para a direita
+    const ax = new THREE.Vector3(0, 1, .28).normalize(), fz = new THREE.Vector3(1, 0, -.55 + t[0]).normalize(), fy = new THREE.Vector3().crossVectors(fz, ax).normalize(); fz.crossVectors(ax, fy);
+    _hm.makeBasis(ax, fy, fz);
+  } else { // guarda-mão: eixo ao longo do cano, palma por baixo, dedos sobem pelo lado direito
+    const ax = new THREE.Vector3(0, 0, -1), fz = new THREE.Vector3(.35 + t[0], 1, 0).normalize(), fy = new THREE.Vector3().crossVectors(fz, ax).normalize(); fz.crossVectors(ax, fy);
+    _hm.makeBasis(ax, fy, fz);
+  }
+  out.setFromRotationMatrix(_hm);
+  g.getWorldQuaternion(_hgq); return out.premultiply(_hgq);
 }
 /* =================== HUD =================== */
 const ui = {}; ['hp', 'sh', 'hpbar', 'ammo', 'wname', 'roomInfo', 'banner', 'hitmark', 'dmgdir', 'vignette', 'scope', 'cross', 'cl', 'cr', 'ct', 'cb', 'clock', 'phase', 'scMine', 'scTheirs', 'lblMine', 'lblTheirs', 'pipsMine', 'pipsTheirs',
@@ -3607,15 +3938,15 @@ function updateHUD() {
     setText(el.querySelector('.nm'), 'abn', cl.ab.name + (cl.ab.id === 'shield' && me.shieldUp ? ' (ativo)' : ''));
     c.hidden = left <= .05 || cl.ab.id === 'shield'; if (!c.hidden) setText(c, 'abc', Math.ceil(left) + ''); el.classList.toggle('ready', left <= .05); }
   const alive = e && e.al;
-  const gap = Math.round(4 + curSpread() * 380 + Math.abs(me.punchP) * 120);
-  ui.cl.style.left = (-gap - 8) + 'px'; ui.cr.style.left = gap + 'px'; ui.ct.style.top = (-gap - 8) + 'px'; ui.cb.style.top = gap + 'px';
-  ui.cross.style.opacity = (scoped() || !alive || (WPN[me.wid] && WPN[me.wid].type === 'sniper') || myEf('nocross') || timed('blackout')) ? 0 : 1; ui.scope.hidden = !scoped();
+  const gap = Math.round(XH.gap + (XH.dyn ? curSpread() * 380 + Math.abs(me.punchP) * 120 : 0));
+  if (cache.xkey !== gap + '') { cache.xkey = gap + ''; drawCross(ui.cross, hudCrossEls(), gap); }
+  ui.cross.style.visibility = (scoped() || !alive || (WPN[me.wid] && WPN[me.wid].type === 'sniper') || myEf('nocross') || timed('blackout')) ? 'hidden' : 'visible'; ui.scope.hidden = !scoped();
   ui.hitmark.style.opacity = clamp(1 - (now - hitT) / (.25 * TS), 0, 1); ui.hitmark.className = hitHead ? 'head' : '';
   const hu = clamp(1 - (now - hurtT) / TS, 0, 1); ui.dmgdir.style.opacity = hu; ui.dmgdir.style.transform = `rotate(${hurtAngle}rad)`;
   ui.vignette.style.opacity = Math.max(hu * .8, alive && hp < 30 ? .35 : 0);
   ui.flashOv.style.opacity = now < me.blindUntil ? clamp((me.blindUntil - now) / Math.max(.5, me.blindMax * .6), 0, 1) : 0;
   if (!alive) { const v = spectateTarget(); ui.spec.hidden = false; setText(ui.spec, 'sp', !e ? 'Você entra na próxima rodada' : v ? 'Assistindo ' + v.p.n + ' · Espaço troca' + (v.p.hu ? '' : ' · T assume este bot') : 'Aguardando a próxima rodada'); } else ui.spec.hidden = true;
-  setText(ui.roomInfo, 'ri', MAPS[MAP_ID].name + ' · ' + (NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.role === 'client' && playing && NET.lastSnapAt && performance.now() - NET.lastSnapAt > 1000 ? 'conexão instável, recuperando…' : NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via servidor') + (NET.role === 'client' && PING.ms ? ' · ' + Math.round(PING.ms) + ' ms' : '') : 'reconectando…')));
+  setText(ui.roomInfo, 'ri', MAPS[MAP_ID].name + ' · ' + (NET.role === 'solo' ? 'Treino com bots' : 'Sala ' + NET.code.toUpperCase() + ' · ' + (NET.role === 'client' && playing && NET.lastSnapAt && performance.now() - NET.lastSnapAt > 1000 ? 'conexão instável, recuperando…' : NET.client && NET.client.connected ? (netMode() === 'direta' ? 'conexão direta' : 'via ' + netMode()) + (NET.role === 'client' && PING.ms ? ' · ' + Math.round(PING.ms) + ' ms' : '') : 'reconectando…')));
   if (now - revealedT < 3.5 * TS) { if (cache.rv !== 1) { cache.rv = 1; banner('O inimigo invadiu as câmeras: você está visível', true); } } else cache.rv = 0;
   if (now > bannerUntil) ui.banner.hidden = true; if (now > bigUntil) ui.bigmsg.hidden = true;
   if (buyOpen) { if (!buyWindow() || !alive || !inBuyZone(side, me.x, me.z)) closeBuy(); else renderBuy(); }
@@ -3673,7 +4004,7 @@ const BUY_LIST = [
   { title: 'Fuzis', items: ['ak', 'm4', 'sniper'] },
   { title: 'Equipamento', items: ['vest', 'helm', 'kit', 'he', 'fl', 'sm'] },
 ];
-const BUY_KEYS = {}; let buyKeyIdx = 0;
+const BUY_KEYS = {}; let buyKeyIdx = 0; const myBought = {};
 const buyLabel = (it) => WPN[it] ? WPN[it].name : GRENADES[it] ? GRENADES[it].name : ARMOR[it].name;
 function openBuy() {
   if (!myAlive() || !buyWindow() || !inBuyZone(mySide(), me.x, me.z)) { banner('Só dá para comprar no seu spawn, no começo da rodada'); return; }
@@ -3683,7 +4014,7 @@ function openBuy() {
 function closeBuy() { if (!buyOpen) return; buyOpen = false; ui.buy.hidden = true; if (playing && !noLock && $('pause').hidden && $('end').hidden) requestLock(); }
 function renderBuy() {
   const e = myEnt(); if (!e) return; const side = mySide(), cls = myCls().id, iv = e.iv;
-  const key = e.m + '|' + iv.join() + side + cls; setText(ui.buyCash, 'bc', '$' + e.m); setText(ui.buyTime, 'bt', S.ph === 'pre' ? 'Compra aberta' : 'Compra fecha em ' + Math.ceil(S.tm - (T_LIVE - BUY_EXTRA)) + ' s');
+  const key = e.m + '|' + iv.join() + side + cls + Object.keys(myBought).join(); setText(ui.buyCash, 'bc', '$' + e.m); setText(ui.buyTime, 'bt', S.ph === 'pre' ? 'Compra aberta' : 'Compra fecha em ' + Math.ceil(S.tm - (T_LIVE - BUY_EXTRA)) + ' s');
   if (cache.buy === key) return; cache.buy = key; ui.buyCols.textContent = '';
   let n = 0; for (const k in BUY_KEYS) delete BUY_KEYS[k];
   for (const col of BUY_LIST) {
@@ -3700,6 +4031,21 @@ function renderBuy() {
     }
     ui.buyCols.append(c);
   }
+  // vender o que você tem para trocar por algo melhor
+  const sc = document.createElement('div'); sc.className = 'buycol sell'; const sh = document.createElement('h3'); sh.textContent = 'Vender'; sc.append(sh);
+  const sellable = [];
+  if (iv[0]) sellable.push(iv[0]);
+  if (iv[1] && iv[1] !== DEFAULT_PISTOL[side]) sellable.push(iv[1]);
+  [['he', 5], ['fl', 6], ['sm', 7]].forEach(([g, i]) => { if (iv[i] && myBought[g]) sellable.push(g); });
+  for (const it of sellable) {
+    const v = myBought[it] ? priceFor(it, side, cls) : GRENADES[it] ? 0 : Math.round(priceFor(it, side, cls) / 2 / 10) * 10; if (!v) continue;
+    const b = document.createElement('button'); b.className = 'item sellbtn';
+    const nm = document.createElement('span'); nm.textContent = buyLabel(it); const pr = document.createElement('span'); pr.className = 'pr'; pr.textContent = '+$' + v;
+    const tag = document.createElement('kbd'); tag.textContent = myBought[it] ? '100%' : '50%';
+    b.append(tag, nm, pr); b.addEventListener('click', () => sendEv({ k: 'sell', it })); sc.append(b);
+  }
+  if (sc.children.length === 1) { const p = document.createElement('p'); p.className = 'sellnote'; p.textContent = 'Nada para vender. Compre algo ou guarde a arma da rodada anterior.'; sc.append(p); }
+  ui.buyCols.append(sc);
 }
 
 /* =================== sala: magia e modo =================== */
@@ -3774,7 +4120,7 @@ function renderRoom(l) {
   $('inviteBox').hidden = NET.role === 'solo'; $('roomCode').textContent = NET.code.toUpperCase();
   $('inviteLink').value = inviteURL(); $('pauseLink').value = inviteURL();
 }
-const inviteURL = () => location.origin + location.pathname + '#sala-' + NET.code;
+const inviteURL = () => location.origin + location.pathname + (isRelay() ? '?srv=' + encodeURIComponent(NET.broker.slice(6)) : '') + '#sala-' + NET.code;
 function copyField(input, btn, label) { const v = input.value, done = () => { btn.textContent = 'Copiado'; setTimeout(() => btn.textContent = label, 1500); }; try { navigator.clipboard.writeText(v).then(done, () => input.select()); } catch (e) { input.select(); } }
 /* =================== mensagens do anfitrião (lado do convidado) =================== */
 let lastEvQ = 0;
@@ -3864,6 +4210,7 @@ document.addEventListener('mousemove', (e) => {
   if (!playing || (!locked && !noLock) || !myAlive()) return;
   const k = .0022 * sens * (camera.fov / 75);
   me.yaw -= (e.movementX || 0) * k; me.pitch = clamp(me.pitch - (e.movementY || 0) * k, -1.45, 1.45);
+  vmSway.x = clamp(vmSway.x + (e.movementX || 0) * k, -.25, .25); vmSway.y = clamp(vmSway.y + (e.movementY || 0) * k, -.25, .25);
 });
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
@@ -3976,6 +4323,210 @@ function frame() {
 $('nick').value = nick;
 $('nick').addEventListener('input', () => { nick = $('nick').value.trim().slice(0, 16); store.set('ldf_nick', nick); });
 $('sens').value = sens; $('sens').addEventListener('input', () => { sens = +$('sens').value; store.set('ldf_sens', sens); });
+/* ---------- mira customizável ---------- */
+const XDEF = { style: 'cross', color: '#eef1f3', len: 8, thick: 2, gap: 4, alpha: 1, outline: true, dyn: true };
+let XH = Object.assign({}, XDEF); try { Object.assign(XH, JSON.parse(store.get('ldf_cross', '{}'))); } catch (e) {}
+const XSTYLES = [['cross', 'Cruz'], ['crossdot', 'Cruz + ponto'], ['tee', 'Em T'], ['dot', 'Ponto'], ['circle', 'Círculo']];
+const XCOLORS = ['#eef1f3', '#3dff6e', '#00e5ff', '#ffe23d', '#ff4fd8', '#ff3b3b'];
+function drawCross(root, els, gap) {
+  const c = XH, sh = c.outline ? '0 0 0 1px rgba(0,0,0,.75)' : 'none', bars = c.style !== 'dot' && c.style !== 'circle';
+  root.style.opacity = c.alpha;
+  const [l, r, t, b, dot, ring] = els;
+  for (const [el, horiz] of [[l, 1], [r, 1], [t, 0], [b, 0]]) {
+    el.style.display = bars && !(el === t && c.style === 'tee') ? 'block' : 'none';
+    el.style.background = c.color; el.style.boxShadow = sh;
+    el.style.width = (horiz ? c.len : c.thick) + 'px'; el.style.height = (horiz ? c.thick : c.len) + 'px';
+    if (horiz) el.style.top = (-c.thick / 2) + 'px'; else el.style.left = (-c.thick / 2) + 'px';
+  }
+  l.style.left = (-gap - c.len) + 'px'; r.style.left = gap + 'px'; t.style.top = (-gap - c.len) + 'px'; b.style.top = gap + 'px';
+  const ds = Math.max(2, c.thick + (c.style === 'dot' ? 1 : 0));
+  dot.style.display = c.style === 'crossdot' || c.style === 'dot' || c.style === 'circle' ? 'block' : 'none';
+  Object.assign(dot.style, { width: ds + 'px', height: ds + 'px', left: (-ds / 2) + 'px', top: (-ds / 2) + 'px', background: c.color, boxShadow: sh, borderRadius: c.style === 'dot' ? '50%' : '0' });
+  if (ring) { const rr = gap + c.len; ring.style.display = c.style === 'circle' ? 'block' : 'none';
+    Object.assign(ring.style, { width: rr * 2 + 'px', height: rr * 2 + 'px', left: -rr + 'px', top: -rr + 'px', border: c.thick + 'px solid ' + c.color, boxShadow: c.outline ? '0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.6)' : 'none', margin: (-c.thick) + 'px 0 0 ' + (-c.thick) + 'px' }); }
+}
+const xPrevEls = ['h', 'h', 'v', 'v', 'dot', 'ring'].map((k) => { const i = document.createElement('i'); $('xPrevC').append(i); return i; });
+const hudCrossEls = () => [ui.cl, ui.cr, ui.ct, ui.cb, $('cdot'), $('cring')];
+function crossSave() { store.set('ldf_cross', JSON.stringify(XH)); cache.xkey = ''; xEdSync(); }
+function xEdSync() {
+  drawCross($('xPrevC'), xPrevEls, XH.gap);
+  for (const [id, k, f] of [['Len', 'len', (v) => v + ' px'], ['Thick', 'thick', (v) => v + ' px'], ['Gap', 'gap', (v) => v + ' px'], ['Alpha', 'alpha', (v) => Math.round(v * 100) + '%']]) { $('x' + id).value = XH[k]; $('o' + id).textContent = f(XH[k]); }
+  $('xOutline').checked = XH.outline; $('xDyn').checked = XH.dyn; $('xPick').value = XH.color;
+  $('xStyle').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === XH.style));
+  $('xColor').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === XH.color));
+}
+XSTYLES.forEach(([v, n]) => { const b = document.createElement('button'); b.className = 'chip'; b.dataset.v = v; b.textContent = n; b.addEventListener('click', () => { XH.style = v; crossSave(); }); $('xStyle').append(b); });
+XCOLORS.forEach((v) => { const b = document.createElement('button'); b.className = 'xsw'; b.dataset.v = v; b.style.background = v; b.setAttribute('aria-label', 'Cor ' + v); b.addEventListener('click', () => { XH.color = v; crossSave(); }); $('xColor').append(b); });
+for (const [id, k] of [['xLen', 'len'], ['xThick', 'thick'], ['xGap', 'gap'], ['xAlpha', 'alpha']]) $(id).addEventListener('input', () => { XH[k] = +$(id).value; crossSave(); });
+$('xPick').addEventListener('input', () => { XH.color = $('xPick').value; crossSave(); });
+$('xOutline').addEventListener('change', () => { XH.outline = $('xOutline').checked; crossSave(); });
+$('xDyn').addEventListener('change', () => { XH.dyn = $('xDyn').checked; crossSave(); });
+$('xReset').addEventListener('click', () => { XH = Object.assign({}, XDEF); crossSave(); });
+$('xBgL').addEventListener('click', () => { $('xPrev').classList.remove('dark'); $('xBgL').setAttribute('aria-pressed', 'true'); $('xBgD').setAttribute('aria-pressed', 'false'); });
+$('xBgD').addEventListener('click', () => { $('xPrev').classList.add('dark'); $('xBgD').setAttribute('aria-pressed', 'true'); $('xBgL').setAttribute('aria-pressed', 'false'); });
+let xFrom = null;
+function openCrossEd(from) { xFrom = from; $(from).hidden = true; $('crossEd').hidden = false; xEdSync(); }
+$('xDone').addEventListener('click', () => { $('crossEd').hidden = true; if (xFrom) $(xFrom).hidden = false; });
+$('pauseCross').addEventListener('click', () => openCrossEd('pause'));
+/* ---------- fichas, skins e trocas ---------- */
+const GUN_NAME = (g) => (WPN[g] ? WPN[g].name : g);
+function cleanItem(it) {
+  if (!it || typeof it !== 'object') return null;
+  const w = String(it.w), f = it.f | 0, wear = clamp(num(it.wear), 0, 1);
+  if (!SKIN_GUNS.includes(w) || f < 0 || f >= FINISHES.length) return null;
+  return { w, f, wear: +wear.toFixed(3) };
+}
+let earnT = 0, earnSum = 0;
+function earn(v, why) {
+  if (NET.role === 'solo') v = Math.ceil(v / 2); // treino com bots rende metade
+  WALLET.coins += v; walletSave(); earnSum += v;
+  const el = $('earnToast'); el.textContent = '+' + earnSum + ' fichas · ' + why; el.hidden = false; clearTimeout(earnT);
+  earnT = setTimeout(() => { el.hidden = true; earnSum = 0; }, 2200);
+  if (!$('arsenal').hidden) setText($('arsCoins'), 'coins', WALLET.coins + '');
+}
+const swatchUrl = {};
+function swatch(f, wear) { const k = f + ':' + Math.round(wear * 10); if (swatchUrl[k]) return swatchUrl[k]; const t = skinTex(f, wear); try { return (swatchUrl[k] = t.image.toDataURL('image/jpeg', .8)); } catch (e) { return ''; } }
+function skinCard(x, opts = {}) {
+  const F = FINISHES[x.f], Rr = RARITY[F.r], b = document.createElement(opts.tag || 'button'); b.className = 'skin'; b.style.setProperty('--rc', Rr.c);
+  const sw = document.createElement('div'); sw.className = 'sw'; sw.style.backgroundImage = `url(${swatch(x.f, x.wear)})`;
+  const gn = document.createElement('div'); gn.className = 'gn'; gn.textContent = GUN_NAME(x.w);
+  const fn = document.createElement('div'); fn.className = 'fn'; fn.textContent = F.n; fn.style.color = Rr.c;
+  const wr = document.createElement('div'); wr.className = 'wr'; wr.textContent = Rr.n + ' · ' + wearName(x.wear);
+  b.append(sw, gn, fn, wr);
+  if (x.u && WALLET.eq[x.w] === x.u) { const e = document.createElement('span'); e.className = 'eqb'; e.textContent = 'EQUIPADA'; b.append(e); }
+  return b;
+}
+const sellPrice = (x) => Math.round(RARITY[FINISHES[x.f].r].sell * (1.15 - x.wear * .4));
+let arsTab = 'inv', arsGun = '', arsFrom = null, tradePick = null, tradeTo = null;
+function openArsenal(from) { arsFrom = from || null; if (from) $(from).hidden = true; $('arsenal').hidden = false; renderArsenal(); }
+function closeArsenal() { $('arsenal').hidden = true; if (arsFrom) $(arsFrom).hidden = false; }
+function renderArsenal() {
+  $('arsCoins').textContent = WALLET.coins; cache.coins = WALLET.coins + '';
+  for (const [t, id, pane] of [['inv', 'tabInv', 'arsInv'], ['case', 'tabCase', 'arsCase'], ['trade', 'tabTrade', 'arsTrade']]) { $(id).setAttribute('aria-pressed', arsTab === t); $(pane).hidden = arsTab !== t; }
+  if (arsTab === 'inv') {
+    const fl = $('arsFilter'); fl.textContent = '';
+    for (const g of [''].concat(SKIN_GUNS)) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = g ? GUN_NAME(g) : 'Todas'; b.setAttribute('aria-pressed', arsGun === g); b.addEventListener('click', () => { arsGun = g; renderArsenal(); }); fl.append(b); }
+    const grid = $('arsGrid'); grid.textContent = '';
+    const list = WALLET.items.filter((x) => !arsGun || x.w === arsGun).sort((a, b) => FINISHES[b.f].r - FINISHES[a.f].r);
+    if (!list.length) { const p = document.createElement('p'); p.className = 'note'; p.textContent = 'Nenhuma skin ainda. Abra uma caixa de suprimentos.'; grid.append(p); }
+    for (const x of list) {
+      const c = skinCard(x, { tag: 'div' }), acts = document.createElement('div'); acts.className = 'skin-acts';
+      const eq = document.createElement('button'); eq.className = 'btn sec'; const on = WALLET.eq[x.w] === x.u; eq.textContent = on ? 'Tirar' : 'Equipar';
+      eq.addEventListener('click', () => { if (on) delete WALLET.eq[x.w]; else WALLET.eq[x.w] = x.u; walletSave(); refreshMyGun(); renderArsenal(); });
+      const sl = document.createElement('button'); sl.className = 'btn sec'; sl.textContent = 'Vender +' + sellPrice(x);
+      sl.addEventListener('click', () => { if (!confirm('Vender ' + FINISHES[x.f].n + ' (' + GUN_NAME(x.w) + ') por ' + sellPrice(x) + ' fichas?')) return; WALLET.coins += sellPrice(x); removeItem(x.u); walletSave(); refreshMyGun(); renderArsenal(); });
+      acts.append(eq, sl); c.append(acts); grid.append(c);
+    }
+  } else if (arsTab === 'case') {
+    const od = $('arsOdds'); if (!od.children.length) { const tot = RARITY.reduce((a, r) => a + r.w, 0); RARITY.forEach((r) => { const sp = document.createElement('span'); sp.style.setProperty('--rc', r.c); sp.textContent = r.n + ' ' + (r.w / tot * 100).toFixed(1).replace('.', ',') + '%'; od.append(sp); }); }
+    $('arsOpen').disabled = WALLET.coins < 100 || caseSpinning;
+  } else renderTrade();
+}
+function rollItem() {
+  const tot = RARITY.reduce((a, r) => a + r.w, 0); let x = Math.random() * tot, r = 0;
+  for (; r < RARITY.length - 1; r++) { if (x < RARITY[r].w) break; x -= RARITY[r].w; }
+  const fins = FINISHES.map((F, i) => [F, i]).filter(([F]) => F.r === r);
+  return { w: pick(SKIN_GUNS), f: pick(fins)[1], wear: Math.pow(Math.random(), 1.6) };
+}
+let caseSpinning = false;
+function openCase() {
+  if (caseSpinning || WALLET.coins < 100) return;
+  WALLET.coins -= 100; walletSave(); caseSpinning = true; $('arsWon').textContent = ''; renderArsenal();
+  const won = rollItem(), reel = $('arsReel'); reel.textContent = ''; reel.style.transition = 'none'; reel.style.transform = 'translateX(0)';
+  const N = 40, WIN = 34; for (let i = 0; i < N; i++) reel.append(skinCard(i === WIN ? won : rollItem(), { tag: 'div' }));
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const card = reel.children[WIN], wrap = reel.parentElement, off = card.offsetLeft + card.offsetWidth / 2 - wrap.clientWidth / 2 + (Math.random() - .5) * card.offsetWidth * .7;
+    reel.style.transition = 'transform 5.2s cubic-bezier(.08,.6,.12,1)'; reel.style.transform = `translateX(${-off}px)`;
+    let last = -1; const tick = setInterval(() => { const m = new DOMMatrix(getComputedStyle(reel).transform), i = Math.floor((-m.m41 + wrap.clientWidth / 2) / 148); if (i !== last) { last = i; tone(1200 + Math.random() * 200, .02, .05, 'square', 900); } }, 30);
+    setTimeout(() => {
+      clearInterval(tick); caseSpinning = false; const x = addItem(won), F = FINISHES[x.f], Rr = RARITY[F.r];
+      $('arsWon').innerHTML = ''; const b = document.createElement('b'); b.style.color = Rr.c; b.textContent = F.n; $('arsWon').append('Você ganhou ', b, ' para ' + GUN_NAME(x.w) + ' (' + Rr.n + ', ' + wearName(x.wear) + ')');
+      tone(F.r >= 3 ? 660 : 520, .25, .14, 'triangle', F.r >= 3 ? 1320 : 780); renderArsenal();
+    }, 5400);
+  }));
+}
+function refreshMyGun() { if (typeof me !== 'undefined' && me.wid) { const w = me.wid; if (vmGun) vmGun.userData.key = ''; vmSetGun(w); } }
+/* trocas: proposta vai pelo anfitrião da sala; quem aceita pode mandar uma skin de volta ou aceitar como presente */
+const pendingOut = {}, offersIn = [];
+function roomPlayers() { const ps = (L && L.ps) || []; return ps.filter((p) => p.hu && p.i !== NET.myId); }
+function renderTrade() {
+  const inRoom = NET.role === 'host' || NET.role === 'client', others = inRoom ? roomPlayers() : [];
+  $('tradeHint').textContent = !inRoom ? 'Entre numa sala com um amigo para trocar skins.' : others.length ? 'Escolha uma skin sua e para quem enviar. Ele pode aceitar dando uma skin de volta ou só receber.' : 'Esperando outro jogador entrar na sala.';
+  const mine = $('tradeMine'); mine.textContent = '';
+  for (const x of WALLET.items) { const c = skinCard(x); if (tradePick === x.u) c.classList.add('sel'); c.addEventListener('click', () => { tradePick = tradePick === x.u ? null : x.u; renderTrade(); }); mine.append(c); }
+  if (!WALLET.items.length) { const p = document.createElement('p'); p.className = 'note'; p.textContent = 'Você não tem skins.'; mine.append(p); }
+  const who = $('tradeWho'); who.textContent = '';
+  for (const p of others) { const b = document.createElement('button'); b.className = 'btn sec'; b.textContent = p.n; b.setAttribute('aria-pressed', tradeTo === p.i); b.addEventListener('click', () => { tradeTo = p.i; renderTrade(); }); who.append(b); }
+  $('tradeSend').disabled = !tradePick || !tradeTo || !others.some((p) => p.i === tradeTo);
+  const box = $('tradeIn'); box.textContent = '';
+  if (!offersIn.length) { const p = document.createElement('p'); p.className = 'note'; p.textContent = 'Nenhuma proposta.'; box.append(p); }
+  for (const of of offersIn) {
+    const row = document.createElement('div'); row.className = 'offer';
+    const info = document.createElement('div'); info.append(skinCard(of.it, { tag: 'div' }));
+    const who2 = document.createElement('p'); who2.className = 'note'; who2.textContent = 'De ' + of.name + (tradePick ? ' · se aceitar, você dá a skin selecionada à esquerda' : ' · aceitar sem dar nada em troca'); info.append(who2);
+    const acts = document.createElement('div'); acts.className = 'row';
+    const ok = document.createElement('button'); ok.className = 'btn'; ok.textContent = 'Aceitar';
+    ok.addEventListener('click', () => { const give = tradePick ? WALLET.items.find((x) => x.u === tradePick) : null; of.give = give ? give.u : null; of.done = true; tradePick = null; sendEv({ k: 'tradeAcc', to: of.from, o: of.o, it: give ? { w: give.w, f: give.f, wear: give.wear } : null }); });
+    const no = document.createElement('button'); no.className = 'btn sec'; no.textContent = 'Recusar';
+    no.addEventListener('click', () => { sendEv({ k: 'tradeNo', to: of.from, o: of.o }); offersIn.splice(offersIn.indexOf(of), 1); renderTrade(); });
+    acts.append(ok, no); row.append(info, acts); box.append(row);
+  }
+}
+$('tradeSend').addEventListener('click', () => {
+  const x = WALLET.items.find((y) => y.u === tradePick); if (!x || !tradeTo) return;
+  const o = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); pendingOut[o] = x.u;
+  sendEv({ k: 'trade', to: tradeTo, o, it: { w: x.w, f: x.f, wear: x.wear } }); banner('Proposta enviada'); tradePick = null; renderTrade();
+});
+function tradeOffer(ev) {
+  if (ev.to !== NET.myId) return; const it = cleanItem(ev.it); if (!it) return;
+  offersIn.push({ from: ev.from, o: ev.o, it, name: (((L && L.ps) || []).find((p) => p.i === ev.from) || {}).n || 'Jogador' });
+  banner('Nova proposta de troca: abra o Arsenal'); tone(900, .1, .1, 'triangle', 1200);
+  if (!$('arsenal').hidden && arsTab === 'trade') renderTrade();
+}
+function tradeDone(ev) {
+  if (ev.a === NET.myId && pendingOut[ev.o]) { // minha proposta foi aceita
+    removeItem(pendingOut[ev.o]); delete pendingOut[ev.o]; const got = cleanItem(ev.it); if (got) addItem(got);
+    banner(got ? 'Troca concluída: você recebeu ' + FINISHES[got.f].n : 'Sua skin foi entregue'); refreshMyGun();
+  } else if (ev.b === NET.myId) {
+    const i = offersIn.findIndex((x) => x.o === ev.o); if (i < 0) return; const of = offersIn.splice(i, 1)[0];
+    if (of.give) removeItem(of.give); addItem(of.it); banner('Troca concluída: você recebeu ' + FINISHES[of.it.f].n); refreshMyGun();
+  }
+  if (!$('arsenal').hidden) renderArsenal();
+}
+function tradeNo(ev) { if (ev.a === NET.myId && pendingOut[ev.o]) { delete pendingOut[ev.o]; banner('Proposta de troca recusada'); } }
+$('tabInv').addEventListener('click', () => { arsTab = 'inv'; renderArsenal(); });
+$('tabCase').addEventListener('click', () => { arsTab = 'case'; renderArsenal(); });
+$('tabTrade').addEventListener('click', () => { arsTab = 'trade'; renderArsenal(); });
+$('arsOpen').addEventListener('click', openCase);
+$('arsClose').addEventListener('click', closeArsenal);
+$('pauseArs').addEventListener('click', () => openArsenal('pause'));
+$('roomArs').addEventListener('click', () => openArsenal('room'));
+/* ---------- home: cartões de arsenal/mira e servidor próprio ---------- */
+const homeXEls = (() => { const c = document.createElement('span'); $('homeXC').append(c); return ['h', 'h', 'v', 'v', 'dot', 'ring'].map(() => { const i = document.createElement('i'); c.append(i); return i; }); })();
+function renderHome() {
+  setText($('homeCoins'), 'hcoins', WALLET.coins + '');
+  const eq = Object.keys(WALLET.eq).length; setText($('homeSkins'), 'hskins', WALLET.items.length ? WALLET.items.length + ' skins · ' + eq + ' equipadas' : 'Abra caixas e troque skins');
+  drawCross(homeXEls[0].parentElement, homeXEls, XH.gap);
+}
+renderHome();
+$('homeArs').addEventListener('click', () => openArsenal('home'));
+$('homeCross').addEventListener('click', () => openCrossEd('home'));
+$('xDone').addEventListener('click', renderHome); $('arsClose').addEventListener('click', renderHome);
+$('srvInput').value = SRV;
+if (SRV) { $('srvState').textContent = 'Servidor próprio: ' + SRV.replace(/^wss?:\/\//, ''); $('srvState').className = 'note ok'; $('home').querySelector('details.cfg').open = !!new URLSearchParams(location.search).get('srv'); }
+$('srvSave').addEventListener('click', () => {
+  const u = cleanSrv($('srvInput').value), st = $('srvState');
+  if (!$('srvInput').value.trim()) { SRV = ''; store.set('ldf_srv', ''); st.className = 'note'; st.textContent = 'Sem servidor próprio: a sala usa conexão direta e, se ela falhar, servidores públicos.'; return; }
+  if (!u) { st.className = 'note bad'; st.textContent = 'Endereço inválido.'; return; }
+  st.className = 'note'; st.textContent = 'Testando…';
+  const t0 = performance.now(); let done = false, ws;
+  try { ws = new WebSocket(u + '/ldf'); } catch (e) { st.className = 'note bad'; st.textContent = 'Não consegui conectar.'; return; }
+  const fail = () => { if (done) return; done = true; st.className = 'note bad'; st.textContent = 'Não consegui conectar a ' + u.replace(/^wss?:\/\//, '') + '.'; try { ws.close(); } catch (e) {} };
+  const to = setTimeout(fail, 12000);
+  ws.onopen = () => { const t1 = performance.now(); ws.send(JSON.stringify({ op: 'sub', t: ['linhadefogo/ping/' + randId(6)] })); ws.send(JSON.stringify({ op: 'pub', t: 'linhadefogo/ping/x', d: '1' }));
+    setTimeout(() => { if (done) return; done = true; clearTimeout(to); SRV = u; store.set('ldf_srv', u); st.className = 'note ok'; st.textContent = 'Conectado a ' + u.replace(/^wss?:\/\//, '') + ' · ' + Math.round(t1 - t0) + ' ms para abrir. Salas criadas agora usam este servidor.'; ws.close(); }, 50); };
+  ws.onerror = () => { clearTimeout(to); fail(); };
+});
 function setQuality(q) { quality = q; store.set('ldf_q', q); $('qHigh').setAttribute('aria-pressed', q === 'alta'); $('qLow').setAttribute('aria-pressed', q === 'leve'); applyQuality(); }
 $('qHigh').addEventListener('click', () => setQuality('alta')); $('qLow').addEventListener('click', () => setQuality('leve'));
 const hashCode = (location.hash || '').match(/^#sala-([a-z0-9]{6})$/);
@@ -4040,7 +4591,7 @@ buildClassCards(); buildMapCards(); buildElementPicker();
 $('modeClassic').addEventListener('click', () => setMode('classic')); $('modeCards').addEventListener('click', () => setMode('cards'));
 requestAnimationFrame(frame);
 if (!window.mqtt) setNet('O modo online não carregou. Você ainda pode treinar com bots.', true);
-window.__ldf = { scene, camera, renderer, POST, get quality() { return quality; }, setQuality, H, NET, me, get S() { return S; }, views, boxes, findPath, SITES, SPAWNS, navOpen, sendEv, equip, openBuy, WPN, CARDS, traceShotPen, calcDamage, pickCard, castSpell, castUlt, loadMap, MAPS, groundY, vmArms, get vmGun() { return vmGun; }, makeGun, makeSoldier, setSoldierGun, poseSoldier };
+window.__ldf = { scene, camera, renderer, POST, get quality() { return quality; }, setQuality, H, NET, me, get S() { return S; }, views, boxes, findPath, SITES, SPAWNS, navOpen, sendEv, equip, openBuy, WPN, CARDS, traceShotPen, calcDamage, HAND_TUNE, get me2() { return me; }, vmScene, pickCard, castSpell, castUlt, loadMap, MAPS, groundY, vmArms, get vmGun() { return vmGun; }, makeGun, makeSoldier, setSoldierGun, poseSoldier };
 })();
 </script>
 </body>

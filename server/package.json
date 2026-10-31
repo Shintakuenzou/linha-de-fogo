@@ -1,0 +1,10 @@
+{
+  "name": "linha-de-fogo-servidor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de baixa latência do Linha de Fogo (repassa mensagens entre jogadores da sala)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "ws": "^8.18.0" }
+}
